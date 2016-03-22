@@ -17,25 +17,27 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef SSH_CHANNEL_H
-#define SSH_CHANNEL_H
+#include "includes.h"
+#include "ssh-packet.h"
 
-#include "buffer.h"
+packet_t* packet_new(unsigned int size)
+{
+	packet_t *pck;
 
-typedef struct channel channel_t;
+	if ((pck = malloc(sizeof(packet_t))) == NULL)
+		return NULL;
 
-/* Channel data encapsulation */
-struct channel {
-	
-	int channel_id;		//Id of specific channel
-	
-	int write_fd;		//Local write dile descriptor (STDOUT e.g)
-	int read_fd;		//Local read file descriptor (STDIN e.g)
-	
-	buffer_t buf_in;
-	buffer_t buf_out;
-	
-};
+	if ((pck->data = malloc(size)) == NULL)
+		return NULL;
 
-#endif /* SSH_CHANNEL_H */
+	pck->size = size;
+	pck->pos = 0;
+	pck->len = size;
 
+	return pck;
+}
+
+void packet_init()
+{
+
+}

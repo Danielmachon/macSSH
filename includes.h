@@ -16,26 +16,19 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+/* 
+ * File:   includes.h
+ * Author: dmachon
+ *
+ * Created on March 22, 2016, 9:15 PM
+ */
 
-#ifndef SSH_CHANNEL_H
-#define SSH_CHANNEL_H
+#ifndef INCLUDES_H
+#define INCLUDES_H
 
-#include "buffer.h"
+#include <stdint.h>
+#include <stdlib.h>
+#include <stdio.h>
 
-typedef struct channel channel_t;
-
-/* Channel data encapsulation */
-struct channel {
-	
-	int channel_id;		//Id of specific channel
-	
-	int write_fd;		//Local write dile descriptor (STDOUT e.g)
-	int read_fd;		//Local read file descriptor (STDIN e.g)
-	
-	buffer_t buf_in;
-	buffer_t buf_out;
-	
-};
-
-#endif /* SSH_CHANNEL_H */
+#endif /* INCLUDES_H */
 
