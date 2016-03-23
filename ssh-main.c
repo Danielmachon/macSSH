@@ -17,19 +17,20 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /* 
- * File:   includes.h
+ * File:   ssh-main.c
  * Author: dmachon
  *
- * Created on March 22, 2016, 9:15 PM
+ * Created on March 23, 2016, 8:26 PM
  */
 
-#ifndef INCLUDES_H
-#define INCLUDES_H
+#include "includes.h"
 
-#include <stdint.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
+/*
+ * 
+ */
+int main(int argc, char** argv)
+{
 
-#endif /* INCLUDES_H */
+	return(EXIT_SUCCESS);
+}
 

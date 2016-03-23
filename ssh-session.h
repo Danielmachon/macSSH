@@ -20,11 +20,32 @@
 #ifndef SSH_SESSION_H
 #define SSH_SESSION_H
 
+#include "buffer.h"
+#include "ssh-channel.h"
+#include "ssh-packet.h"
+
+
 typedef struct session session_t;
 
 struct session {
 	
+	int session_id;
+	
+	int sock_in;
+	int sock_out;
+	
+	channel_t **channels;
+	
+	buffer_t buf_in;
+	buffer_t buf_out;
+	
+	(*write_packet)(packet_t *pck);
+	packet_t* (*read_packet)(void);
+	
 };
+
+void client_session_loop();
+void server_session_loop();
 
 #endif /* SSH_SESSION_H */
 

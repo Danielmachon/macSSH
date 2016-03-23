@@ -16,20 +16,17 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-/* 
- * File:   includes.h
- * Author: dmachon
- *
- * Created on March 22, 2016, 9:15 PM
- */
 
-#ifndef INCLUDES_H
-#define INCLUDES_H
+#include "buffer.h"
+#include "ssh-packet.h"
 
-#include <stdint.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
 
-#endif /* INCLUDES_H */
+void write_packet(buffer_t *pck)
+{
+	
+}
 
+packet_t* read_packet(void)
+{
+	
+}

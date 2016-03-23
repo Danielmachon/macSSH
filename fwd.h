@@ -17,19 +17,25 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /* 
- * File:   includes.h
+ * File:   port-fwd.h
  * Author: dmachon
  *
- * Created on March 22, 2016, 9:15 PM
+ * Created on March 22, 2016, 11:06 PM
  */
 
-#ifndef INCLUDES_H
-#define INCLUDES_H
+#ifndef FWD_H
+#define FWD_H
 
-#include <stdint.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
+typedef struct fwd fwd_t;
 
-#endif /* INCLUDES_H */
+struct fwd {
+	
+};
+
+struct fwds {
+	fwd_t **fwds;
+	int end;
+};
+
+#endif /* FWD_H */
 

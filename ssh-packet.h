@@ -42,16 +42,17 @@ struct packet {
 	unsigned int pos;
 	unsigned int size; /* the memory size */
 	
-	(put_int*)(packet_t *pck, int data);
-	(put_char*)(packet_t *pck, char data[1]);
-	(put_str)*(packet_t *pck, char *data);
-	(put_byte*)(packet_t *pck, char[1]);
+	void (*put_int)(packet_t *pck, int data);
+	void (*put_char)(packet_t *pck, char data[1]);
+	void (*put_str)(packet_t *pck, char *data);
+	void (*put_byte)(packet_t *pck, char[1]);
 	
 };
 
-/* Initialize packet */
+/* Initialize/Manipulate packet */
 packet_t* packet_new(unsigned int size);
 void packet_init();
+void packet_resize(packet_t *pck);
 
 /* Manipulate data in packet */
 void put_int(packet_t *pck, int data);
