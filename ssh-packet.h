@@ -26,7 +26,6 @@
 #ifndef SSH_PACKET_H
 #define SSH_PACKET_H
 
-typedef struct packet packet_t;
 typedef char byte_t;
 
 /* All implementations MUST be able to process packets with an
@@ -42,23 +41,23 @@ struct packet {
 	unsigned int pos;
 	unsigned int size; /* the memory size */
 	
-	void (*put_int)(packet_t *pck, int data);
-	void (*put_char)(packet_t *pck, char data[1]);
-	void (*put_str)(packet_t *pck, char *data);
-	void (*put_byte)(packet_t *pck, char[1]);
+	void (*put_int)(struct packet *pck, int data);
+	void (*put_char)(struct packet *pck, char data[1]);
+	void (*put_str)(struct packet *pck, char *data);
+	void (*put_byte)(struct packet *pck, char[1]);
 	
 };
 
 /* Initialize/Manipulate packet */
-packet_t* packet_new(unsigned int size);
+struct packet* packet_new(unsigned int size);
 void packet_init();
-void packet_resize(packet_t *pck);
+void packet_resize(struct packet *pck);
 
 /* Manipulate data in packet */
-void put_int(packet_t *pck, int data);
-void put_char(packet_t *pck, char data[1]);
-void put_str(packet_t *pck, char *data);
-void put_byte(packet_t *pck, char[1]);
+void put_int(struct packet *pck, int data);
+void put_char(struct packet *pck, char data[1]);
+void put_str(struct packet *pck, char *data);
+void put_byte(struct packet *pck, char[1]);
 
 #endif /* SSH_PACKET_H */
 

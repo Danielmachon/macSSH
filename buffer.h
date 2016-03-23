@@ -23,33 +23,29 @@
 #include "ssh-packet.h"
 #include "includes.h"
 
-
-typedef struct buffer buffer_t;
-typedef struct buf_node buf_node_t;
-
 /* Single buffer node */
 struct buf_node {
 	
-	packet_t *data;
-	buf_node_t *next;
+	struct buffer *data;
+	struct buf_node *next;
 
 };
 
 /* Buffer to hold in- and outgoing data */
 struct buffer {
 	
-	buf_node_t *head;
-	buf_node_t *tail;
+	struct buf_node *head;
+	struct buf_node *tail;
 	
-	void (*buf_add)(buffer_t *, packet_t *);
-	packet_t* (*buf_remove)(buffer_t *);
-	int (*buf_isempty)(buffer_t *);
-	int (*buf_len)(buffer_t *);
+	void (*buf_add)(struct buffer *, struct packet *);
+	struct packet* (*buf_remove)(struct buffer *);
+	int (*buf_isempty)(struct buffer *);
+	int (*buf_len)(struct buffer *);
 
 };
 
-buffer_t* buf_new();
-void buf_free(buffer_t *);
+struct buffer* buf_new();
+void buf_free(struct buffer *);
 
 #endif /* BUFFER_H */
 

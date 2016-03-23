@@ -20,11 +20,11 @@
 #include "includes.h"
 #include "ssh-packet.h"
 
-packet_t* packet_new(unsigned int size)
+struct packet* packet_new(unsigned int size)
 {
-	packet_t *pck;
+	struct packet *pck;
 
-	if ((pck = malloc(sizeof(packet_t))) == NULL)
+	if ((pck = malloc(sizeof(struct packet))) == NULL)
 		return NULL;
 
 	if ((pck->data = malloc(size)) == NULL)

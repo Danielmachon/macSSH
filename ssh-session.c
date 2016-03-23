@@ -21,12 +21,12 @@
 #include "ssh-packet.h"
 
 
-void write_packet(buffer_t *pck)
+void write_packet(struct packet *pck)
 {
 	
 }
 
-packet_t* read_packet(void)
+struct packet* read_packet(void)
 {
 	
 }

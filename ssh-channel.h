@@ -22,8 +22,6 @@
 
 #include "buffer.h"
 
-typedef struct channel channel_t;
-
 /* Channel data encapsulation */
 struct channel {
 	
@@ -32,8 +30,8 @@ struct channel {
 	int write_fd;		//Local write dile descriptor (STDOUT e.g)
 	int read_fd;		//Local read file descriptor (STDIN e.g)
 	
-	buffer_t ch_buf_in;
-	buffer_t ch_buf_out;
+	struct buffer ch_buf_in;
+	struct buffer ch_buf_out;
 	
 };
 

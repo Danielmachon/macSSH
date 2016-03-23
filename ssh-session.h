@@ -24,9 +24,6 @@
 #include "ssh-channel.h"
 #include "ssh-packet.h"
 
-
-typedef struct session session_t;
-
 struct session {
 	
 	int session_id;
@@ -34,13 +31,13 @@ struct session {
 	int sock_in;
 	int sock_out;
 	
-	channel_t **channels;
+	struct channel **channels;
 	
-	buffer_t buf_in;
-	buffer_t buf_out;
+	struct buffer buf_in;
+	struct buffer buf_out;
 	
-	(*write_packet)(packet_t *pck);
-	packet_t* (*read_packet)(void);
+	(*write_packet)(struct packet *pck);
+	struct packet* (*read_packet)(void);
 	
 };
 

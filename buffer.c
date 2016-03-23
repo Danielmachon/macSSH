@@ -19,9 +19,9 @@
 
 #include "buffer.h"
 
-void buf_add(buffer_t *buf, packet_t *data)
+void buf_add(struct buffer *buf, struct packet *data)
 {
-	buf_node_t *node = malloc(sizeof(buf_node_t));
+	struct buf_node *node = malloc(sizeof(struct buf_node));
 
 	node->data = data;
 	node->next = NULL;
@@ -34,10 +34,10 @@ void buf_add(buffer_t *buf, packet_t *data)
 	}
 }
 
-packet_t* buf_remove(buffer_t *buf)
+struct packet* buf_remove(struct buffer *buf)
 {
-	buf_node_t *node;
-	packet_t *data;
+	struct buf_node *node;
+	struct packet *data;
 
 	if ((node = buf->head) == NULL)
 		return NULL;
@@ -51,24 +51,24 @@ packet_t* buf_remove(buffer_t *buf)
 	return data;
 }
 
-int buf_isempty(buffer_t *buf)
+int buf_isempty(struct buffer *buf)
 {
 	return(buf->head == NULL) ? 0 : 1;
 }
 
-int buf_len(buffer_t *buf)
+int buf_len(struct buffer *buf)
 {
 	int count = 0;
-	buf_node_t *node;
+	struct buf_node *node;
 	for (node = buf->head; node; node = node->next)
 		count++;
 
 	return count;
 }
 
-void buf_free(buffer_t *buf)
+void buf_free(struct buffer *buf)
 {
-	buf_node_t *node;
+	struct buf_node *node;
 	for (node = buf->head; node; node = node->next) {
 		free(node->data);
 		free(node);
@@ -76,7 +76,7 @@ void buf_free(buffer_t *buf)
 	free(buf);
 }
 
-static void buf_init(buffer_t *buf)
+static void buf_init(struct buffer *buf)
 {
 	buf->head = NULL;
 	buf->tail = NULL;
@@ -87,9 +87,9 @@ static void buf_init(buffer_t *buf)
 	buf->buf_len = &buf_len;
 }
 
-buffer_t* buf_new(void)
+struct buffer* buf_new(void)
 {
-	buffer_t *buf = malloc(sizeof(buffer_t));
+	struct buffer *buf = malloc(sizeof(struct buffer));
 	buf_init(buf);
 
 	return buf;
