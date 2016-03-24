@@ -33,16 +33,21 @@ struct session {
 	
 	struct channel **channels;
 	
-	struct buffer buf_in;
-	struct buffer buf_out;
+	struct buffer *buf_in;
+	struct buffer *buf_out;
 	
-	(*write_packet)(struct packet *pck);
+	void (*write_packet)(struct packet *pck);
 	struct packet* (*read_packet)(void);
 	
-};
+} session;
+
+void session_init(struct session *ses);
 
 void client_session_loop();
 void server_session_loop();
+
+void send_identification_string();
+void read_identification_string();
 
 #endif /* SSH_SESSION_H */
 

@@ -17,23 +17,17 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /* 
- * File:   includes.h
+ * File:   util.h
  * Author: dmachon
  *
- * Created on March 22, 2016, 9:15 PM
+ * Created on March 24, 2016, 3:13 PM
  */
 
-#ifndef INCLUDES_H
-#define INCLUDES_H
+#ifndef UTIL_H
+#define UTIL_H
 
-#include <arpa/inet.h>
-#include <getopt.h>
-#include <netdb.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <sys/socket.h>
+int connect_to_remote_host();
 
-#endif /* INCLUDES_H */
+
+#endif /* UTIL_H */
 

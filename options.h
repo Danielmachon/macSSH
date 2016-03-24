@@ -17,23 +17,27 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /* 
- * File:   includes.h
+ * File:   options.h
  * Author: dmachon
  *
- * Created on March 22, 2016, 9:15 PM
+ * Created on March 23, 2016, 10:49 PM
  */
 
-#ifndef INCLUDES_H
-#define INCLUDES_H
+#ifndef OPTIONS_H
+#define OPTIONS_H
 
-#include <arpa/inet.h>
-#include <getopt.h>
-#include <netdb.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <sys/socket.h>
+struct options {
+	
+	/* SSH options */
+	int server_port;
+	char server_addr[32];
+	
+	/* Internal options */
+	int verbose;
+	int more_verbose;
+	int debug;
+	
+} argv_options;
 
-#endif /* INCLUDES_H */
+#endif /* SSH_OPTIONS_H */
 

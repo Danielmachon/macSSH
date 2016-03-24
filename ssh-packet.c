@@ -20,6 +20,39 @@
 #include "includes.h"
 #include "ssh-packet.h"
 
+void put_byte(struct packet *pck, char data[1])
+{
+	
+}
+
+void put_char(struct packet *pck, char data[1])
+{
+	
+}
+
+void put_int(struct packet *pck, int data)
+{
+	
+}
+
+void put_str(struct packet *pck, char *data)
+{
+	memmove(((char*)pck->data) + pck->len, data, strlen(data));
+	pck->len += strlen(data);
+}
+
+
+void packet_init(struct packet *pck)
+{
+	pck->len = 0;
+	pck->pos = 0;
+	
+	pck->put_byte = &put_byte;
+	pck->put_char = &put_char;
+	pck->put_int = &put_int;
+	pck->put_str = &put_str;
+}
+
 struct packet* packet_new(unsigned int size)
 {
 	struct packet *pck;
@@ -30,14 +63,9 @@ struct packet* packet_new(unsigned int size)
 	if ((pck->data = malloc(size)) == NULL)
 		return NULL;
 
+	packet_init(pck);
+	
 	pck->size = size;
-	pck->pos = 0;
-	pck->len = size;
 
 	return pck;
-}
-
-void packet_init()
-{
-
 }

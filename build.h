@@ -20,9 +20,16 @@
 #ifndef BUILD_H
 #define BUILD_H
 
-#define DMA-SSH_VERSION         0x00000001
+#define SSH_VERSION		0x00000001
+#define SHH_VERSION_STR		"SSH-v0.0.0.1"
 
-#define SSH_DEFS                " "
+#define SSH_DEFS                _NO_MMU_DEF " "
+
+#ifdef _NO_MMU	
+#define _NO_MMU_DEF		"+NO_MMU"
+#else
+#define	_NO_MMU_DEF		"-NO_MMU"
+#endif
 
 #endif /* BUILD_H */
 

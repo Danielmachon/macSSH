@@ -26,8 +26,9 @@ void buf_add(struct buffer *buf, struct packet *data)
 	node->data = data;
 	node->next = NULL;
 
-	if (buf->tail == NULL)
+	if (buf->tail == NULL) {
 		buf->head = buf->tail = node;
+	}
 	else {
 		buf->tail->next = node;
 		buf->head = node;

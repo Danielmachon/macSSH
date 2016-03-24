@@ -26,7 +26,7 @@
 /* Single buffer node */
 struct buf_node {
 	
-	struct buffer *data;
+	struct packet *data;
 	struct buf_node *next;
 
 };

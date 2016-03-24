@@ -24,12 +24,101 @@
  */
 
 #include "includes.h"
+#include "build.h"
+#include "misc.h"
+#include "ssh-session.h"
+#include "util.h"
+#include "options.h"
+
+void ssh_version()
+{
+	printf("SSH version: %s\n", SSH_VERSION);
+	printf("Build defs: %s\n", SSH_DEFS);
+}
+
+void ssh_help()
+{
+	printf("SSH [OPTIONS...] {COMMAND} ...\n\n"
+		"Query or send control commands to SSH.\n\n"
+		"  -h --help			Show this help\n"
+		"     --version			Show version and CPP definitions\n"
+		"  -v --verbose			Be more verbose\n"
+		"     --debug			Print extra debug information during runtime\n"
+		"\n"
+		"  -p --port			Specify remote port\n"
+		);
+}
+
+int ssh_parse_argv(int argc, char **argv)
+{
+
+	enum {
+		ARG_FAIL = 0x100,
+		ARG_VERSION,
+		ARG_VERBOSE,
+		ARG_DEBUG,
+		ARG_HELP,
+		ARG_PORT,
+	};
+
+	static const struct option options[] = {
+		{ "help", no_argument, NULL, 'h'},
+		{ "version", no_argument, NULL, ARG_VERSION},
+		{ "verbose", no_argument, NULL, ARG_VERBOSE},
+		{ "debug", no_argument, NULL, ARG_DEBUG},
+		{ "port", required_argument, NULL, ARG_PORT},
+		{}
+	};
+
+
+	int c;
+	while ((c = getopt_long(argc, argv, "hv:p:", options, NULL)) >= 0) {
+		switch (c) {
+		case 'h':
+			ssh_help();
+			return 0;
+		case 'v':
+			return 0;
+		case 'p':
+			argv_options.server_port = 22;
+		case ARG_HELP:
+			ssh_help();
+			return 0;
+		case ARG_VERSION:
+			ssh_version();
+			return 0;
+		case ARG_VERBOSE:
+			argv_options.verbose = 1;
+			break;
+		case ARG_DEBUG:
+			argv_options.debug = 1;
+			break;
+		default:
+			ssh_help();
+			return 0;
+		}
+	}
+
+	return 1;
+}
 
 /*
- * 
+ * Client main
  */
 int main(int argc, char** argv)
 {
+	if (!ssh_parse_argv(argc, argv))
+		return EXIT_SUCCESS;
+	
+	session_init(&session);
+	
+	if(connect_to_remote_host() > -1)
+		send_identification_string();
+	
+	struct packet *pck = session.read_packet();
+	fprintf(stderr, "%s\n", (char*)pck->data);
+	
+	//client_session_loop();
 
 	return(EXIT_SUCCESS);
 }
