@@ -35,6 +35,14 @@ void buf_add(struct buffer *buf, struct packet *data)
 	}
 }
 
+struct packet* buf_get(struct buffer *buf)
+{
+	if(buf->head != NULL)
+		return buf->head->data;
+	else 
+		return NULL;
+}
+
 struct packet* buf_remove(struct buffer *buf)
 {
 	struct buf_node *node;

@@ -21,7 +21,7 @@
 #define BUILD_H
 
 #define SSH_VERSION		0x00000001
-#define SHH_VERSION_STR		"SSH-v0.0.0.1"
+#define SSH_VERSION_STR		"DMA-SSH-alpa_v0.0.0.1"
 
 #define SSH_DEFS                _NO_MMU_DEF " "
 

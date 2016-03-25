@@ -27,7 +27,7 @@ int init_tcp_listen_socket(int port);
 int connect_to_remote_host()
 {
 	int sock;
-	sock = init_tcp_socket("localhost", 22, 0);
+	sock = init_tcp_socket("localhost", 22, 10);
 
 	if(sock < 0)
 		return -1;
@@ -56,9 +56,9 @@ int init_tcp_socket(char *ip, int port, int t_out)
 
 	/* Set TCP socket options */
 	if (t_out) {
-		rcv_timeval.tv_sec = 2;
+		rcv_timeval.tv_sec = t_out;
 		rcv_timeval.tv_usec = 0;
-		snd_timeval.tv_sec = 2;
+		snd_timeval.tv_sec = t_out;
 		snd_timeval.tv_usec = 0;
 
 		int buffersize = 2;

@@ -16,25 +16,11 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-/* 
- * File:   includes.h
- * Author: dmachon
- *
- * Created on March 22, 2016, 9:15 PM
- */
 
-#ifndef INCLUDES_H
-#define INCLUDES_H
+#include "includes.h"
+#include "kex.h"
 
-#include <arpa/inet.h>
-#include <errno.h>
-#include <getopt.h>
-#include <netdb.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <sys/socket.h>
-
-#endif /* INCLUDES_H */
-
+void kex_init()
+{
+	
+}

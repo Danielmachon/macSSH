@@ -17,24 +17,16 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /* 
- * File:   includes.h
+ * File:   kex.h
  * Author: dmachon
  *
- * Created on March 22, 2016, 9:15 PM
+ * Created on March 25, 2016, 10:16 PM
  */
 
-#ifndef INCLUDES_H
-#define INCLUDES_H
+#ifndef KEX_H
+#define KEX_H
 
-#include <arpa/inet.h>
-#include <errno.h>
-#include <getopt.h>
-#include <netdb.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <sys/socket.h>
+void kex_init();
 
-#endif /* INCLUDES_H */
+#endif /* KEX_H */
 

@@ -27,7 +27,8 @@
 #define UTIL_H
 
 int connect_to_remote_host();
-
+void sock_set_blocking();
+void sock_set_nonblocking();
 
 #endif /* UTIL_H */
 

@@ -26,6 +26,8 @@
 #ifndef SSH_PACKET_H
 #define SSH_PACKET_H
 
+#define PACKET_MAX_SIZE		35000
+
 typedef char byte_t;
 
 /* All implementations MUST be able to process packets with an
@@ -52,6 +54,10 @@ struct packet {
 struct packet* packet_new(unsigned int size);
 void packet_init(struct packet *pck);
 void packet_resize(struct packet *pck);
+
+/* Crypto stuff */
+int packet_encrypt(struct packet *pck);
+int packet_descrypt(struct packet *pck);
 
 /* Manipulate data in packet */
 void put_int(struct packet *pck, int data);

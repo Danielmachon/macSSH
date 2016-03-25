@@ -21,23 +21,41 @@
 #define SSH_SESSION_H
 
 #include "buffer.h"
+#include "build.h"
 #include "ssh-channel.h"
 #include "ssh-packet.h"
+
+#define IDENTIFICATION_STRING "SSH-2.0-" SSH_VERSION_STR "\r\n"
+
+enum {
+	NONE = 0,
+	IDENTIFIED = 1,
+	KEXED = 2,
+	SETUP = 3,
+};
 
 struct session {
 	
 	int session_id;
+	
+	int state;
 	
 	int sock_in;
 	int sock_out;
 	
 	struct channel **channels;
 	
+	/* Temporary read packet. Might be incomplete
+	 * after a read. Is put in ingoing buffer if
+	 * complete. */
+	struct packet *tmp_packet;
+	
 	struct buffer *buf_in;
 	struct buffer *buf_out;
 	
-	void (*write_packet)(struct packet *pck);
+	int (*write_packet)(struct packet *pck);
 	struct packet* (*read_packet)(void);
+	struct packet* (*read_bin_packet)(void);
 	
 } session;
 
@@ -46,7 +64,7 @@ void session_init(struct session *ses);
 void client_session_loop();
 void server_session_loop();
 
-void send_identification_string();
+void identify();
 void read_identification_string();
 
 #endif /* SSH_SESSION_H */

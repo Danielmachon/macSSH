@@ -22,31 +22,30 @@
 
 void put_byte(struct packet *pck, char data[1])
 {
-	
+
 }
 
 void put_char(struct packet *pck, char data[1])
 {
-	
+
 }
 
 void put_int(struct packet *pck, int data)
 {
-	
+
 }
 
 void put_str(struct packet *pck, char *data)
 {
-	memmove(((char*)pck->data) + pck->len, data, strlen(data));
+	memmove(((char*) pck->data) + pck->len, data, strlen(data));
 	pck->len += strlen(data);
 }
-
 
 void packet_init(struct packet *pck)
 {
 	pck->len = 0;
 	pck->pos = 0;
-	
+
 	pck->put_byte = &put_byte;
 	pck->put_char = &put_char;
 	pck->put_int = &put_int;
@@ -64,8 +63,22 @@ struct packet* packet_new(unsigned int size)
 		return NULL;
 
 	packet_init(pck);
-	
+
 	pck->size = size;
 
 	return pck;
+}
+
+int packet_encrypt(struct packet *pck)
+{
+
+}
+
+/* The minimum size of a packet is 16 (or the cipher block size,
+whichever is larger) bytes (plus 'mac').  Implementations SHOULD
+decrypt the length after receiving the first 8 (or cipher block size,
+whichever is larger) bytes of a packet. */
+int packet_descrypt(struct packet *pck)
+{
+
 }

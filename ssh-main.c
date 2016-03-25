@@ -113,12 +113,10 @@ int main(int argc, char** argv)
 	session_init(&session);
 	
 	if(connect_to_remote_host() > -1)
-		send_identification_string();
+		identify();
 	
-	struct packet *pck = session.read_packet();
-	fprintf(stderr, "%s\n", (char*)pck->data);
-	
-	//client_session_loop();
+	if(session.state == IDENTIFIED);
+		client_session_loop();
 
 	return(EXIT_SUCCESS);
 }

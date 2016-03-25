@@ -16,25 +16,33 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-/* 
- * File:   includes.h
- * Author: dmachon
- *
- * Created on March 22, 2016, 9:15 PM
- */
 
-#ifndef INCLUDES_H
-#define INCLUDES_H
+#include "includes.h"
+#include "misc.h"
 
-#include <arpa/inet.h>
-#include <errno.h>
-#include <getopt.h>
-#include <netdb.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <sys/socket.h>
 
-#endif /* INCLUDES_H */
+void ssh_print(const char *msg)
+{
+	printf("%s\n", msg);
+}
 
+void ssh_print_file(FILE *file, const char *msg)
+{
+	fprintf(file, "%s\n", msg);
+}
+
+void ssh_debug(const char *msg)
+{
+	fprintf(stderr, "%s\n", msg);
+}
+
+void ssh_err(const char *msg, int err)
+{
+	fprintf(stderr, "%s: %s", msg, strerror(err));
+}
+
+void ssh_exit(const char *msg, int err)
+{
+	ssh_err(msg, err);
+	exit(EXIT_FAILURE);
+}
