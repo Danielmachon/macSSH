@@ -27,6 +27,12 @@
 
 #define IDENTIFICATION_STRING "SSH-2.0-" SSH_VERSION_STR "\r\n"
 
+void session_init(struct session *ses);
+void client_session_loop();
+void server_session_loop();
+void identify();
+void read_identification_string();
+
 enum {
 	NONE = 0,
 	IDENTIFIED = 1,
@@ -35,37 +41,37 @@ enum {
 };
 
 struct session {
-	
 	int session_id;
-	
+
 	int state;
-	
+
 	int sock_in;
 	int sock_out;
-	
+
+	int rx;
+	int tx;
+
 	struct channel **channels;
-	
-	/* Temporary read packet. Might be incomplete
+
+	/* Partial read packet. Might be incomplete
 	 * after a read. Is put in ingoing buffer if
 	 * complete. */
-	struct packet *tmp_packet;
-	
+	struct packet *packet_part;
+
 	struct buffer *buf_in;
 	struct buffer *buf_out;
-	
+
 	int (*write_packet)(struct packet *pck);
 	struct packet* (*read_packet)(void);
 	struct packet* (*read_bin_packet)(void);
-	
+
+	/* Initial identification */
+	void (*identify)();
+
+	/* KEX */
+	void (*kex_init)();
+
 } session;
-
-void session_init(struct session *ses);
-
-void client_session_loop();
-void server_session_loop();
-
-void identify();
-void read_identification_string();
 
 #endif /* SSH_SESSION_H */
 

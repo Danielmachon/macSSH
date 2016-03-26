@@ -26,7 +26,24 @@
 #ifndef KEX_H
 #define KEX_H
 
+struct algorithm {
+	const char *name;
+	void *algorithm;
+};
+
+struct exchange_list {
+	struct algorithm algos[];
+	int num;
+};
+
+extern struct exchange_list kex_list;
+extern struct exchange_list host_list;
+extern struct exchange_list cipher_list;
+extern struct exchange_list hash_list;
+extern struct exchange_list compress_list;
+
 void kex_init();
+void kex_guess();
 
 #endif /* KEX_H */
 

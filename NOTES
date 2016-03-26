@@ -1,0 +1,33 @@
+*   	FIFO buffer on queued packets to write
+    	Must maintain position of written bytes, incase not all,
+    	bytes are written on first attempt. Dont free packet if,
+    	all data has not been written yet.
+
+*   	Or performance, FIFO is probably best implemented as a linked,
+    	list queue.
+
+*	Still not totally sure how the channel IO works
+
+*   	Maybe implement a generic ssh packet struct instead,
+	of a low level generic buffer as Dropbear does it.
+
+March 25th, 2016:
+
+*	Using temporary packet to store partial packets,
+	that have not been fully read from the socket tcp,
+	buffer
+
+*	Identification read is done in blocking mode with a,
+	timeout.
+
+March 26th, 2016
+
+*       It is RECOMMENDED that the keys be changed after each gigabyte of
+        transmitted data or after each hour of connection time, whichever
+        comes sooner.  However, since the re-exchange is a public key
+        operation, it requires a fair amount of processing power and should
+        not be performed too often.
+        Key re-exchange uses the same cipher, mac etc. as before te reexchange.
+        Only after SSH_MSG_NEWKEYS is sent will the new values be taken in use.
+
+

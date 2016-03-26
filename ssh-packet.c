@@ -82,3 +82,9 @@ int packet_descrypt(struct packet *pck)
 {
 
 }
+
+void packet_free(struct packet *pck)
+{
+	free(pck->data);
+	free(pck);
+}

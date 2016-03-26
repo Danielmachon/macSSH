@@ -27,7 +27,10 @@
 
 void client_session_loop()
 {
+	for (;;) {
 
+	}
+loop_out:
 }
 
 void server_session_loop()
@@ -39,11 +42,12 @@ int write_packet(struct packet *pck)
 {
 	int len = 0;
 
-	len = send(session.sock_out, pck->data + pck->pos, 
+	len = send(session.sock_out, pck->data + pck->pos,
 		pck->len - pck->pos, 0);
-	
+
 	return len;
 }
+
 /* Read whatever is on the socket descriptor and return it,
  * as a packet */
 struct packet* read_packet(void)
@@ -70,33 +74,32 @@ struct packet* read_bin_packet(void)
 	/* Check if we have the whole packet */
 	if (((char*) pck->data)[0] == pck->len) {
 		session.buf_in->buf_add(session.buf_in, pck);
-	}
-	else {
-		session.tmp_packet = pck;
+	} else {
+		session.packet_part = pck;
 		return NULL;
 	}
-	
+
 	return pck;
 }
 
-/* Identity with remote host. 
+/* Identify with remote host. 
  * ID packets are read and send directly on the socket
  * descriptor. */
 void identify()
 {
 	struct packet *rem_id_pck = session.read_packet();
-	
-	if(errno == EWOULDBLOCK || errno == EAGAIN) 
+
+	if (errno == EWOULDBLOCK || errno == EAGAIN)
 		ssh_exit("failed in identify()", errno);
-	
+
 	fprintf(stderr, "%s\n", rem_id_pck->data);
-	
-	if(memcmp(rem_id_pck->data, "SSH-2.0", 7) == 0) 
+
+	if (memcmp(rem_id_pck->data, "SSH-2.0", 7) == 0)
 		ssh_print("Found supported remote SSH version\n");
 	else
 		ssh_print("Found unsupported SSH version\n");
-	
-	if(memcmp(rem_id_pck->data + 7, "DMA-SSH", 7) == 0)
+
+	if (memcmp(rem_id_pck->data + 7, "DMA-SSH", 7) == 0)
 		ssh_print("Seems like remote host is using DMA-SSH");
 
 	struct packet *loc_id_pck = packet_new(64);
@@ -109,25 +112,43 @@ void identify()
 	if (loc_id_pck->pos != loc_id_pck->len) {
 		/* Enqueue the packet for retransmission */
 		session.buf_out->buf_add(session.buf_out, loc_id_pck);
-		
-		fprintf(stderr, "%u out of %u was transmitted\n", 
+
+		fprintf(stderr, "%u out of %u was transmitted\n",
 			loc_id_pck->pos, loc_id_pck->len);
 	}
-	
+
 	free(rem_id_pck);
 	free(loc_id_pck);
-	
-	session.state = IDENTIFIED;	
+
+	session.state = IDENTIFIED;
 }
 
 void session_init(struct session *ses)
 {
+	ses->session_id = 1;
+
+	ses.rx = 0;
+	ses.tx = 0;
+
 	ses->buf_in = buf_new();
 	ses->buf_out = buf_new();
-	
-	ses->tmp_packet = packet_new(PACKET_MAX_SIZE);
+
+	ses->packet_part = packet_new(PACKET_MAX_SIZE);
 
 	ses->read_packet = &read_packet;
 	ses->read_bin_packet = &read_bin_packet;
-	ses->write_packet = &write_packet;                                      
+	ses->write_packet = &write_packet;
+}
+
+void session_free()
+{
+	buf_free(session.buf_in);
+	buf_free(session.buf_out);
+
+	packet_free(session.packet_part);
+
+	close(session.sock_in);
+	close(session.sock_out);
+
+	free(&session);
 }

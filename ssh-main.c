@@ -110,14 +110,17 @@ int main(int argc, char** argv)
 	if (!ssh_parse_argv(argc, argv))
 		return EXIT_SUCCESS;
 	
+	/* Setup sesssion state */
 	session_init(&session);
 	
 	if(connect_to_remote_host() > -1)
 		identify();
 	
-	if(session.state == IDENTIFIED);
+	if(session.state == IDENTIFIED)
 		client_session_loop();
-
+		
+	session_free();
+	
 	return(EXIT_SUCCESS);
 }
 

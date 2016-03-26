@@ -54,6 +54,7 @@ struct packet {
 struct packet* packet_new(unsigned int size);
 void packet_init(struct packet *pck);
 void packet_resize(struct packet *pck);
+void packet_free(struct packet *pck);
 
 /* Crypto stuff */
 int packet_encrypt(struct packet *pck);
@@ -64,6 +65,8 @@ void put_int(struct packet *pck, int data);
 void put_char(struct packet *pck, char data[1]);
 void put_str(struct packet *pck, char *data);
 void put_byte(struct packet *pck, char data[1]);
+void put_list(struct packet *pck, char **data);
+
 
 #endif /* SSH_PACKET_H */
 

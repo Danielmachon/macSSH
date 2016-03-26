@@ -37,15 +37,15 @@ struct buffer {
 	struct buf_node *head;
 	struct buf_node *tail;
 	
-	void (*buf_add)(struct buffer *, struct packet *);
-	struct packet* (*buf_remove)(struct buffer *);
-	int (*buf_isempty)(struct buffer *);
-	int (*buf_len)(struct buffer *);
+	void (*buf_add)(struct buffer *, struct packet *pck);
+	struct packet* (*buf_remove)(struct buffer *buf);
+	int (*buf_isempty)(struct buffer *buf);
+	int (*buf_len)(struct buffer *buf);
 
 };
 
 struct buffer* buf_new();
-void buf_free(struct buffer *);
+void buf_free(struct buffer *buf);
 
 #endif /* BUFFER_H */
 
