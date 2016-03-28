@@ -53,32 +53,44 @@ void put_str(struct packet *pck, const char *data)
 
 void put_exch_list(struct packet* pck, struct exchange_list* data)
 {
+	struct packet tmp;
+	packet_init(&tmp);
+	
 	int x;
 	for (x = 0; x < data->num; x++) {
-		int len = strlen(data->algos[x].name);
-		pck->put_str(pck, data->algos[x].name);
+		tmp.put_str(&tmp, data->algos[x].name);
 
-		if (x != data->num)
-			pck->put_char(pck, ',');
+		int len = 0;
+		len += strlen(data->algos[x].name);
+		tmp.len += len;
+
+		if (x != (data->num - 1)) {
+			tmp.put_char(&tmp, ',');
+			len++;
+		}		
 	}
+	
+	pck->put_int(pck, tmp.len);
+	pck->put_str(pck, (const char *) tmp.data);
+	
 }
 
-int get_int(struct packet *pck)
+int get_int(struct packet * pck)
 {
 
 }
 
-unsigned char get_char(struct packet *pck)
+unsigned char get_char(struct packet * pck)
 {
 
 }
 
-char* get_str(struct packet *pck)
+char* get_str(struct packet * pck)
 {
 
 }
 
-unsigned char get_byte(struct packet *pck)
+unsigned char get_byte(struct packet * pck)
 {
 
 }
@@ -88,12 +100,12 @@ char* get_bytes(struct packet *pck, int num)
 
 }
 
-struct exchange_list* get_exch_list(struct packet *pck)
+struct exchange_list * get_exch_list(struct packet * pck)
 {
 
 }
 
-void packet_init(struct packet *pck)
+void packet_init(struct packet * pck)
 {
 	pck->len = 0;
 	pck->pos = 0;
@@ -106,7 +118,7 @@ void packet_init(struct packet *pck)
 	pck->put_exch_list = &put_exch_list;
 }
 
-struct packet* packet_new(unsigned int size)
+struct packet * packet_new(unsigned int size)
 {
 	struct packet *pck;
 
@@ -123,7 +135,7 @@ struct packet* packet_new(unsigned int size)
 	return pck;
 }
 
-int packet_encrypt(struct packet *pck)
+int packet_encrypt(struct packet * pck)
 {
 
 }
@@ -132,12 +144,12 @@ int packet_encrypt(struct packet *pck)
 whichever is larger) bytes (plus 'mac').  Implementations SHOULD
 decrypt the length after receiving the first 8 (or cipher block size,
 whichever is larger) bytes of a packet. */
-int packet_descrypt(struct packet *pck)
+int packet_descrypt(struct packet * pck)
 {
 
 }
 
-void packet_free(struct packet *pck)
+void packet_free(struct packet * pck)
 {
 	free(pck->data);
 	free(pck);
