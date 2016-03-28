@@ -27,6 +27,9 @@
 
 #define IDENTIFICATION_STRING "SSH-2.0-" SSH_VERSION_STR "\r\n"
 
+struct session;
+
+void session_free();
 void session_init(struct session *ses);
 void client_session_loop();
 void server_session_loop();
@@ -41,6 +44,7 @@ enum {
 };
 
 struct session {
+	
 	int session_id;
 
 	int state;

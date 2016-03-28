@@ -31,6 +31,7 @@ void client_session_loop()
 
 	}
 loop_out:
+;
 }
 
 void server_session_loop()
@@ -127,8 +128,8 @@ void session_init(struct session *ses)
 {
 	ses->session_id = 1;
 
-	ses.rx = 0;
-	ses.tx = 0;
+	ses->rx = 0;
+	ses->tx = 0;
 
 	ses->buf_in = buf_new();
 	ses->buf_out = buf_new();
@@ -149,6 +150,4 @@ void session_free()
 
 	close(session.sock_in);
 	close(session.sock_out);
-
-	free(&session);
 }

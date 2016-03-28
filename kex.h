@@ -32,8 +32,8 @@ struct algorithm {
 };
 
 struct exchange_list {
-	struct algorithm algos[];
 	int num;
+	struct algorithm algos[];
 };
 
 extern struct exchange_list kex_list;

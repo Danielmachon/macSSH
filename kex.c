@@ -19,6 +19,8 @@
 
 #include "includes.h"
 #include "kex.h"
+#include "ssh-packet.h"
+#include "ssh-numbers.h"
 
 /* List of supported kex algorithms */
 struct exchange_list kex_list = {
@@ -62,7 +64,7 @@ struct exchange_list cipher_list = {
 		{"aes256-cbc", NULL},
 		{"twofish256-cbc", NULL},
 		{"twofish-cbc", NULL},
-		{"twofish128-cbc", 0NULL},
+		{"twofish128-cbc", NULL},
 		{"3des-ctr", NULL},
 		{"3des-cbc", NULL},
 		{"blowfish-cbc", NULL},
@@ -109,7 +111,16 @@ struct exchange_list compress_list = {
 
 void kex_init()
 {
-
+	struct packet *pck = packet_new(1024);
+	char cookie[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+	
+	pck->put_byte(pck, SSH_MSG_KEXINIT);
+	pck->put_bytes(pck, cookie, 16);
+	pck->put_exch_list(pck, &kex_list);
+	pck->put_exch_list(pck, &cipher_list);
+	pck->put_exch_list(pck, &hash_list);
+	pck->put_exch_list(pck, &host_list);
+	pck->put_exch_list(pck, &compress_list);
 }
 
 void kex_guess()

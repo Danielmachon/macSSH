@@ -36,5 +36,9 @@
 #include <string.h>
 #include <sys/socket.h>
 
+/* tomcrypt and tommath */
+#include <tomcrypt.h>
+#include <tommath.h>
+
 #endif /* INCLUDES_H */
 

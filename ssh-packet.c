@@ -19,26 +19,78 @@
 
 #include "includes.h"
 #include "ssh-packet.h"
+#include "kex.h"
 
-void put_byte(struct packet *pck, char data[1])
+void put_byte(struct packet *pck, unsigned char data)
 {
-
+	((char *) pck->data)[pck->len] = data;
+	pck->len++;
 }
 
-void put_char(struct packet *pck, char data[1])
+void put_bytes(struct packet *pck, void *data, int len)
 {
+	memcpy(pck->data + pck->pos, (char*) data, len);
+}
 
+void put_char(struct packet *pck, unsigned char data)
+{
+	((char *) pck->data)[pck->len] = data;
+	pck->len++;
 }
 
 void put_int(struct packet *pck, int data)
 {
-
+	/* Macro from tomcrypt */
+	STORE32H(data, pck->data + pck->len);
+	pck->len += 4;
 }
 
-void put_str(struct packet *pck, char *data)
+void put_str(struct packet *pck, const char *data)
 {
 	memmove(((char*) pck->data) + pck->len, data, strlen(data));
 	pck->len += strlen(data);
+}
+
+void put_exch_list(struct packet* pck, struct exchange_list* data)
+{
+	int x;
+	for (x = 0; x < data->num; x++) {
+		int len = strlen(data->algos[x].name);
+		pck->put_str(pck, data->algos[x].name);
+
+		if (x != data->num)
+			pck->put_char(pck, ',');
+	}
+}
+
+int get_int(struct packet *pck)
+{
+
+}
+
+unsigned char get_char(struct packet *pck)
+{
+
+}
+
+char* get_str(struct packet *pck)
+{
+
+}
+
+unsigned char get_byte(struct packet *pck)
+{
+
+}
+
+char* get_bytes(struct packet *pck, int num)
+{
+
+}
+
+struct exchange_list* get_exch_list(struct packet *pck)
+{
+
 }
 
 void packet_init(struct packet *pck)
@@ -50,6 +102,8 @@ void packet_init(struct packet *pck)
 	pck->put_char = &put_char;
 	pck->put_int = &put_int;
 	pck->put_str = &put_str;
+	pck->put_bytes = &put_bytes;
+	pck->put_exch_list = &put_exch_list;
 }
 
 struct packet* packet_new(unsigned int size)
