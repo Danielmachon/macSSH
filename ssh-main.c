@@ -29,6 +29,7 @@
 #include "ssh-session.h"
 #include "util.h"
 #include "options.h"
+#include "kex.h"
 
 void ssh_version()
 {
@@ -109,18 +110,22 @@ int main(int argc, char** argv)
 {
 	if (!ssh_parse_argv(argc, argv))
 		return EXIT_SUCCESS;
-	
+
 	/* Setup sesssion state */
 	session_init(&session);
-	
-	if(connect_to_remote_host() > -1)
+
+	if (connect_to_remote_host() > -1)
 		identify();
-	
-	if(session.state == IDENTIFIED)
+
+	if (session.state == IDENTIFIED)
+		kex_init();
+
+	if (session.state == KEXED)
 		client_session_loop();
-		
+
+finish:
 	session_free();
-	
+
 	return(EXIT_SUCCESS);
 }
 

@@ -54,6 +54,9 @@ struct session {
 
 	int rx;
 	int tx;
+	
+	/* Number of kex'es (initial + renegotiation) */
+	int kex_num;
 
 	struct channel **channels;
 

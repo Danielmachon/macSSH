@@ -29,7 +29,8 @@ void put_byte(struct packet *pck, unsigned char data)
 
 void put_bytes(struct packet *pck, void *data, int len)
 {
-	memcpy(pck->data + pck->wr_pos, (char*) data, len);
+	memcpy(pck->data + pck->len, (char*) data, len);
+	pck->len += len;
 }
 
 void put_char(struct packet *pck, unsigned char data)
@@ -53,25 +54,20 @@ void put_str(struct packet *pck, const char *data)
 
 void put_exch_list(struct packet* pck, struct exchange_list* data)
 {
-	struct packet tmp;
-	packet_init(&tmp);
+	struct packet *tmp = packet_new(1024);
 	
 	int x;
 	for (x = 0; x < data->num; x++) {
-		tmp.put_str(&tmp, data->algos[x].name);
 
-		int len = 0;
-		len += strlen(data->algos[x].name);
-		tmp.len += len;
+		tmp->put_str(tmp, data->algos[x].name);
 
-		if (x != (data->num - 1)) {
-			tmp.put_char(&tmp, ',');
-			len++;
-		}		
+		if (x != (data->num - 1)) 
+			tmp->put_char(tmp, ',');
+		
 	}
 	
-	pck->put_int(pck, tmp.len);
-	pck->put_str(pck, (const char *) tmp.data);
+	pck->put_int(pck, tmp->len);
+	pck->put_str(pck, (const char *) tmp->data);
 	
 }
 

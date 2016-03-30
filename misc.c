@@ -31,6 +31,16 @@ void ssh_print_file(FILE *file, const char *msg)
 	fprintf(file, "%s\n", msg);
 }
 
+void ssh_print_array(void *data, int len)
+{
+	int x;
+	for(x = 0; x < len; x++)  {
+		fprintf(stderr, "[%u]", ((unsigned char *)data)[x]);
+		if(x % 15 == 0)
+			fprintf(stderr, "\n");
+	}
+}
+
 void ssh_debug(const char *msg)
 {
 	fprintf(stderr, "%s\n", msg);

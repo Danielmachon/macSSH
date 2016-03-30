@@ -31,6 +31,7 @@
 
 void ssh_print(const char *msg);
 void ssh_print_file(FILE *file, const char *msg);
+void ssh_print_array(void *data, int len);
 void ssh_debug(const char *msg);
 void ssh_err(const char *msg, int err);
 void ssh_exit(const char *msg, int err);

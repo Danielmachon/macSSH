@@ -17,10 +17,14 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <unistd.h>
+
 #include "includes.h"
 #include "kex.h"
 #include "ssh-packet.h"
 #include "ssh-numbers.h"
+#include "misc.h"
+#include "ssh-session.h"
 
 /* List of supported kex algorithms */
 struct exchange_list kex_list = {
@@ -69,10 +73,9 @@ struct exchange_list cipher_list = {
 		{"3des-cbc", NULL},
 		{"blowfish-cbc", NULL},
 		{"none", NULL},
-		{NULL, NULL}
 	},
 
-	.num = 14
+	.num = 13
 
 };
 
@@ -87,10 +90,9 @@ struct exchange_list hash_list = {
 		{"hmac-sha2-512", NULL},
 		{"hmac-md5", NULL},
 		{"none",},
-		{NULL, NULL}
 	},
 
-	.num = 7
+	.num = 6
 
 };
 
@@ -102,10 +104,9 @@ struct exchange_list compress_list = {
 		{"zlib@openssh.com", NULL},
 		{"zlib", NULL},
 		{"none", NULL},
-		{NULL, NULL}
 	},
 
-	.num = 4
+	.num = 3
 
 };
 
@@ -121,8 +122,24 @@ void kex_init()
 	pck->put_exch_list(pck, &hash_list);
 	pck->put_exch_list(pck, &host_list);
 	pck->put_exch_list(pck, &compress_list);
+	
+	/* No preferred languages */
+	pck->put_str(pck, "");
+	
 	pck->put_byte(pck, 0); //No guess
 	pck->put_int(pck, 0); //Reserved
+	
+	//ssh_print_array(pck->data, pck->len);
+	
+	if(session.write_packet(pck) == pck->len)
+		fprintf(stderr, "All bytes were transmitted\n");
+	
+	struct packet *kex_resp = packet_new(4096);
+	kex_resp = session.read_packet();
+	
+	ssh_print_array(kex_resp->data, kex_resp->len);
+	fprintf(stderr, "%s\n", ((unsigned char *)kex_resp->data+25));
+	
 }
 
 void kex_guess()

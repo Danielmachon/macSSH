@@ -68,7 +68,7 @@ struct packet* read_bin_packet(void)
 	int len = 0;
 	struct packet *pck;
 	(session.packet_part == NULL) ? 
-		pck = packet_new(1514) : pck = session.packet_part;
+		(pck = packet_new(1514)) : (pck = session.packet_part);
 
 	len = read(session.sock_out, pck->data + pck->len, 1514);
 
