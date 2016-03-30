@@ -43,8 +43,8 @@ int write_packet(struct packet *pck)
 {
 	int len = 0;
 
-	len = send(session.sock_out, pck->data + pck->pos,
-		pck->len - pck->pos, 0);
+	len = send(session.sock_out, pck->data + pck->wr_pos,
+		pck->len - pck->wr_pos, 0);
 
 	return len;
 }
@@ -107,15 +107,15 @@ void identify()
 
 	loc_id_pck->put_str(loc_id_pck, IDENTIFICATION_STRING);
 
-	loc_id_pck->pos = session.write_packet(loc_id_pck);
+	loc_id_pck->wr_pos = session.write_packet(loc_id_pck);
 
 	/* Check if entire packet has been transmitted */
-	if (loc_id_pck->pos != loc_id_pck->len) {
+	if (loc_id_pck->wr_pos != loc_id_pck->len) {
 		/* Enqueue the packet for retransmission */
 		session.buf_out->buf_add(session.buf_out, loc_id_pck);
 
 		fprintf(stderr, "%u out of %u was transmitted\n",
-			loc_id_pck->pos, loc_id_pck->len);
+			loc_id_pck->wr_pos, loc_id_pck->len);
 	}
 
 	free(rem_id_pck);

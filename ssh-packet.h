@@ -38,10 +38,10 @@ struct exchange_list;
 /* Single packet buffer */
 struct packet {
 	
-	void *data;
-	unsigned int len; /* the used size */
-	unsigned int pos;
-	unsigned int size; /* the memory size */
+	void *data;		/* Actual data */
+	unsigned int len;	/* Used size */
+	unsigned int wr_pos;	/* Write position */
+	unsigned int size;	/* Memory size */
 	
 	void (*put_int)(struct packet *pck, int data);
 	void (*put_char)(struct packet *pck, unsigned char data);

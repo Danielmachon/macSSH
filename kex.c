@@ -121,6 +121,8 @@ void kex_init()
 	pck->put_exch_list(pck, &hash_list);
 	pck->put_exch_list(pck, &host_list);
 	pck->put_exch_list(pck, &compress_list);
+	pck->put_byte(pck, 0); //No guess
+	pck->put_int(pck, 0); //Reserved
 }
 
 void kex_guess()

@@ -29,7 +29,7 @@ void put_byte(struct packet *pck, unsigned char data)
 
 void put_bytes(struct packet *pck, void *data, int len)
 {
-	memcpy(pck->data + pck->pos, (char*) data, len);
+	memcpy(pck->data + pck->wr_pos, (char*) data, len);
 }
 
 void put_char(struct packet *pck, unsigned char data)
@@ -108,7 +108,7 @@ struct exchange_list * get_exch_list(struct packet * pck)
 void packet_init(struct packet * pck)
 {
 	pck->len = 0;
-	pck->pos = 0;
+	pck->wr_pos = 0;
 
 	pck->put_byte = &put_byte;
 	pck->put_char = &put_char;
