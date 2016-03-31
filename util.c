@@ -32,7 +32,7 @@ int connect_to_remote_host()
 	if(sock < 0)
 		return -1;
 	else
-		session.sock_out = sock;
+		session.sock_out = session.sock_in = sock;
 	
 	return 0;
 }

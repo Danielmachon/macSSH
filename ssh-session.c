@@ -56,8 +56,8 @@ struct packet* read_packet(void)
 	int len = 0;
 	struct packet *pck = packet_new(1514);
 
-	len = read(session.sock_out, pck->data, 1514);
-
+	len = read(session.sock_in, pck->data, 1514);
+	
 	pck->len = len;
 }
 

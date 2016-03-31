@@ -41,15 +41,37 @@ void ssh_print_array(void *data, int len)
 	}
 }
 
+/* Attempt to print any embedded string in byte array */
 void ssh_print_embedded_string(void *data, int len)
 {
+	unsigned char *ptr = (unsigned char * )data;
+	
 	int x;
-	int y = 0;
+	int start = 0;
+	int end = 0;
 	for(x = 0; x < len; x++) {
-		while(((unsigned char *)data)[x] > '31')
-			y++;
-		fprintf(stderr, "%s\n", data + x);
-		x += y;
+		if(ptr[x] >= ' ') {
+			/* Printable. Mark start. */
+			if(!start)
+				start = x;
+		}
+		else {
+			/* Zero termination. Mark end if previous byte
+			 * was a printable */
+			if(start && ptr[x] == '\0') 
+				end = x;
+			/* Non-printable and not zero. 
+			 * This is definitely not a string */
+			else
+				start = 0;
+		}
+		
+		/* Check if we have something to print */
+		if(start && end) {
+			fprintf(stderr, "This looks stringy: %s\n", 
+				ptr + start, end - start);
+			start = end = 0;
+		}
 	}
 }
 

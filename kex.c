@@ -110,36 +110,80 @@ struct exchange_list compress_list = {
 
 };
 
+/* List of supported language */
+struct exchange_list lang_list = {
+
+	.algos =
+	{
+		{"", NULL},
+	},
+
+	.num = 1
+};
+
 void kex_init()
 {
+	/*	
+	byte         SSH_MSG_KEXINIT
+	byte[16]     cookie (random bytes)
+	name-list    kex_algorithms
+	name-list    server_host_key_algorithms
+	name-list    encryption_algorithms_client_to_server
+	name-list    encryption_algorithms_server_to_client
+	name-list    mac_algorithms_client_to_server
+	name-list    mac_algorithms_server_to_client
+	name-list    compression_algorithms_client_to_server
+	name-list    compression_algorithms_server_to_client
+	name-list    languages_client_to_server
+	name-list    languages_server_to_client
+	boolean      first_kex_packet_follows
+	uint32       0 (reserved for future extension) */
+
 	struct packet *pck = packet_new(1024);
-	char cookie[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-	
+	pck->len = 5; //Make room for size and pad size
+	char cookie[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+	char pads[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+
 	pck->put_byte(pck, SSH_MSG_KEXINIT);
 	pck->put_bytes(pck, cookie, 16);
 	pck->put_exch_list(pck, &kex_list);
+	pck->put_exch_list(pck, &host_list);
+	pck->put_exch_list(pck, &cipher_list);
 	pck->put_exch_list(pck, &cipher_list);
 	pck->put_exch_list(pck, &hash_list);
-	pck->put_exch_list(pck, &host_list);
+	pck->put_exch_list(pck, &hash_list);
 	pck->put_exch_list(pck, &compress_list);
-	
-	/* No preferred languages */
-	pck->put_str(pck, "");
-	
+	pck->put_exch_list(pck, &compress_list);
+
+	/* No preferred languages both ways */
+	pck->put_exch_list(pck, &lang_list);
+	pck->put_exch_list(pck, &lang_list);
+
 	pck->put_byte(pck, 0); //No guess
 	pck->put_int(pck, 0); //Reserved
+	pck->put_bytes(pck, pads, 10);
 	
-	//ssh_print_array(pck->data, pck->len);
+	put_size(pck, pck->len);
+	put_pad_size(pck, 10);
+
+	ssh_print_array(pck->data, pck->len);
+	ssh_print_embedded_string(pck->data, pck->len);
 	
-	if(session.write_packet(pck) == pck->len)
+	if (session.write_packet(pck) == pck->len)
 		fprintf(stderr, "All bytes were transmitted\n");
-	
-	struct packet *kex_resp = packet_new(4096);
+
+	struct packet *kex_resp;
 	kex_resp = session.read_packet();
 	
 	ssh_print_array(kex_resp->data, kex_resp->len);
-	fprintf(stderr, "%s\n", ((unsigned char *)kex_resp->data+25));
-	
+	ssh_print_embedded_string(kex_resp->data, kex_resp->len);
+
+	struct packet *kex_resp_2;
+	kex_resp_2 = session.read_packet();
+
+	ssh_print_embedded_string(kex_resp_2->data, kex_resp_2->len);
+
+
 }
 
 void kex_guess()

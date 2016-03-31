@@ -69,6 +69,10 @@ void put_byte(struct packet *pck, unsigned char data);
 void put_bytes(struct packet *pck, void *data, int len);
 void put_exch_list(struct packet *pck, struct exchange_list *data);
 
+/* Manipulate meta-data in packet */
+void put_size(struct packet *pck, int data);
+void put_pad_size(struct packet *pck, int data);
+
 /* Get data from packet */
 int get_int(struct packet *pck);
 unsigned char get_char(struct packet *pck);

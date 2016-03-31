@@ -41,6 +41,7 @@ extern struct exchange_list host_list;
 extern struct exchange_list cipher_list;
 extern struct exchange_list hash_list;
 extern struct exchange_list compress_list;
+extern struct exchange_list lang_list;
 
 void kex_init();
 void kex_guess();

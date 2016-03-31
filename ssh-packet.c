@@ -21,15 +21,25 @@
 #include "ssh-packet.h"
 #include "kex.h"
 
+void put_size(struct packet *pck, int data)
+{
+	STORE32H(data, pck->data);
+}
+
+void put_pad_size(struct packet *pck, int data)
+{
+	((unsigned char *)pck->data)[4] = data;
+}
+
 void put_byte(struct packet *pck, unsigned char data)
 {
-	((char *) pck->data)[pck->len] = data;
+	((unsigned char *) pck->data)[pck->len] = data;
 	pck->len++;
 }
 
 void put_bytes(struct packet *pck, void *data, int len)
 {
-	memcpy(pck->data + pck->len, (char*) data, len);
+	memcpy(pck->data + pck->len, (unsigned char*) data, len);
 	pck->len += len;
 }
 
