@@ -41,6 +41,18 @@ void ssh_print_array(void *data, int len)
 	}
 }
 
+void ssh_print_embedded_string(void *data, int len)
+{
+	int x;
+	int y = 0;
+	for(x = 0; x < len; x++) {
+		while(((unsigned char *)data)[x] > '31')
+			y++;
+		fprintf(stderr, "%s\n", data + x);
+		x += y;
+	}
+}
+
 void ssh_debug(const char *msg)
 {
 	fprintf(stderr, "%s\n", msg);
