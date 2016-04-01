@@ -159,33 +159,56 @@ void kex_init()
 	pck->put_exch_list(pck, &lang_list);
 	pck->put_exch_list(pck, &lang_list);
 
-	pck->put_byte(pck, 0); //No guess
+	pck->put_byte(pck, 1); //No guess
 	pck->put_int(pck, 0); //Reserved
-	pck->put_bytes(pck, pads, 10);
 	
-	put_size(pck, pck->len);
-	put_pad_size(pck, 10);
-
-	ssh_print_array(pck->data, pck->len);
-	ssh_print_embedded_string(pck->data, pck->len);
+	/* Stamp with metadata */
+	put_stamp(pck);
+	
+	//ssh_print_array(pck->data, pck->len);
+	//ssh_print_embedded_string(pck->data, pck->len);
 	
 	if (session.write_packet(pck) == pck->len)
 		fprintf(stderr, "All bytes were transmitted\n");
 
 	struct packet *kex_resp;
 	kex_resp = session.read_packet();
+	kex_resp->rd_pos = 5;
 	
-	ssh_print_array(kex_resp->data, kex_resp->len);
-	ssh_print_embedded_string(kex_resp->data, kex_resp->len);
-
+	if(kex_resp->get_int(kex_resp) == SSH_MSG_KEXINIT)
+		kex_negotiate(kex_resp);
+	else
+		ssh_err("Expected remote KEX_INIT. Found something else\n", -1);
+	
 	struct packet *kex_resp_2;
 	kex_resp_2 = session.read_packet();
 
-	ssh_print_embedded_string(kex_resp_2->data, kex_resp_2->len);
+	//ssh_print_embedded_string(kex_resp_2->data, kex_resp_2->len);
 
 
 }
 
+/* Negotiate algorithms by mathing remote and local versions */
+static void kex_negotiate(struct packet *pck)
+{
+	/* Skip the 16 byte cookie */
+	pck->rd_pos += 16;
+	
+	kex_try_match(pck->get_exch_list(pck), kex_list);
+	kex_try_match(pck->get_exch_list(pck), host_list);
+	kex_try_match(pck->get_exch_list(pck), cipher_list);
+	kex_try_match(pck->get_exch_list(pck), hash_list);
+	kex_try_match(pck->get_exch_list(pck), compress_list);
+	kex_try_match(pck->get_exch_list(pck), lang_list);
+}
+
+/* Try to match remote and local version of single algorithm */
+static void kex_try_match(struct exchange_list rem, struct exchange_list loc)
+{
+	
+}
+
+/* Send a KEX guess */
 void kex_guess()
 {
 

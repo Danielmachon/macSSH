@@ -17,9 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <unistd.h>
-#include <bits/errno.h>
-
+#include "includes.h"
 #include "buffer.h"
 #include "ssh-packet.h"
 #include "ssh-session.h"
@@ -57,7 +55,12 @@ struct packet* read_packet(void)
 	struct packet *pck = packet_new(1514);
 
 	len = read(session.sock_in, pck->data, 1514);
-	
+
+	if(len == 0)
+		fprintf(stderr, "read() returned 0\n");
+	else if(len < 0)
+		fprintf(stderr, "read() returned -1\n");
+
 	pck->len = len;
 }
 
@@ -137,6 +140,9 @@ void session_init(struct session *ses)
 	ses->buf_out = buf_new();
 
 	ses->packet_part = packet_new(PACKET_MAX_SIZE);
+	
+	ses->crypto = malloc(sizeof(struct crypto));
+	memset(ses->crypto, 0, sizeof(struct crypto));
 
 	ses->read_packet = &read_packet;
 	ses->read_bin_packet = &read_bin_packet;

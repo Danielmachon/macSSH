@@ -6,4 +6,4 @@ SSH is inspired by Dropbear, but written entirely from scratch. it is meant as a
 
 SSH has an extensive tracing feature that can be enabled at configure time. If enabled, this feature will trace print initialization, key-exchange/renegotiation and other protocol related steps, so that the end user has a better understanding of what goes on behind the curtain.
 
-DMA-SSH follows the Linux kernel coding style (see CODING_STYLE)
+DMA-SSH follows the Linux kernel coding style (see the CODING_STYLE document)

@@ -17,30 +17,34 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /* 
- * File:   includes.h
+ * File:   crypto.h
  * Author: dmachon
  *
- * Created on March 22, 2016, 9:15 PM
+ * Created on April 1, 2016, 11:25 PM
  */
 
-#ifndef INCLUDES_H
-#define INCLUDES_H
+#ifndef CRYPTO_H
+#define CRYPTO_H
 
-#include <arpa/inet.h>
-#include <bits/errno.h>
-#include <errno.h>
-#include <getopt.h>
-#include <netdb.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <sys/socket.h>
-#include <unistd.h>
+#include "includes.h"
+#include "kex.h"
 
-/* tomcrypt and tommath */
-#include <tomcrypt.h>
-#include <tommath.h>
+struct keys {
+	
+	struct algorithm kex;
+	struct algorithm host;
+	struct algorithm ciper;
+	struct algorithm hash;
+	struct algorithm compress;
+	struct algorithm lang;
+	
+};
 
-#endif /* INCLUDES_H */
+struct crypto {
+	
+	struct keys keys;
+	
+};
+
+#endif /* CRYPTO_H */
 

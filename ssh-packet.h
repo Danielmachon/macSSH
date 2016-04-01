@@ -26,7 +26,7 @@
 #ifndef SSH_PACKET_H
 #define SSH_PACKET_H
 
-#define PACKET_MAX_SIZE		35000
+#define PACKET_MAX_SIZE  35000
 
 /* All implementations MUST be able to process packets with an
 uncompressed payload length of 32768 bytes or less and a total packet
@@ -37,18 +37,25 @@ struct exchange_list;
 
 /* Single packet buffer */
 struct packet {
-	
-	void *data;		/* Actual data */
-	unsigned int len;	/* Used size */
-	unsigned int wr_pos;	/* Write position */
-	unsigned int size;	/* Memory size */
-	
+	void *data; /* Actual data */
+	unsigned int len; /* Used size */
+	unsigned int wr_pos; /* Write position */
+	unsigned int rd_pos; /* Read position */
+	unsigned int size; /* Memory size */
+
 	void (*put_int)(struct packet *pck, int data);
 	void (*put_char)(struct packet *pck, unsigned char data);
 	void (*put_str)(struct packet *pck, const char *data);
 	void (*put_byte)(struct packet *pck, unsigned char);
 	void (*put_bytes)(struct packet *pck, void *data, int len);
 	void (*put_exch_list)(struct packet *pck, struct exchange_list *data);
+
+	int (*get_int)(struct packet *pck);
+	unsigned char (*get_char)(struct packet *pck);
+	char* (*get_str)(struct packet *pck);
+	unsigned char (*get_byte)(struct packet *pck);
+	unsigned char* (*get_bytes)(struct packet *pck, int num);
+	struct exchange_list* (*get_exch_list)(struct packet *pck);
 };
 
 /* Initialize/Manipulate packet */
@@ -72,13 +79,14 @@ void put_exch_list(struct packet *pck, struct exchange_list *data);
 /* Manipulate meta-data in packet */
 void put_size(struct packet *pck, int data);
 void put_pad_size(struct packet *pck, int data);
+void put_stamp(struct packet *pck);
 
 /* Get data from packet */
 int get_int(struct packet *pck);
 unsigned char get_char(struct packet *pck);
 char* get_str(struct packet *pck);
 unsigned char get_byte(struct packet *pck);
-char* get_bytes(struct packet *pck, int num);
+unsigned char* get_bytes(struct packet *pck, int num);
 struct exchange_list* get_exch_list(struct packet *pck);
 
 

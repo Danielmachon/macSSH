@@ -28,7 +28,25 @@ void put_size(struct packet *pck, int data)
 
 void put_pad_size(struct packet *pck, int data)
 {
-	((unsigned char *)pck->data)[4] = data;
+	((unsigned char *) pck->data)[4] = data;
+}
+
+void put_stamp(struct packet* pck)
+{
+
+	int pad;
+	if ((pad = (pck->len % 8)) > 4) {
+		put_pad_size(pck, (8 - pad));
+	} else {
+		pad = 4;
+		put_pad_size(pck, pad);
+	}
+
+	int x;
+	for (x = 0; x < pad; x++)
+		pck->put_byte(pck, 0);
+
+	put_size(pck, pck->len);
 }
 
 void put_byte(struct packet *pck, unsigned char data)
@@ -65,25 +83,28 @@ void put_str(struct packet *pck, const char *data)
 void put_exch_list(struct packet* pck, struct exchange_list* data)
 {
 	struct packet *tmp = packet_new(1024);
-	
+
 	int x;
 	for (x = 0; x < data->num; x++) {
 
 		tmp->put_str(tmp, data->algos[x].name);
 
-		if (x != (data->num - 1)) 
+		if (x != (data->num - 1))
 			tmp->put_char(tmp, ',');
-		
+
 	}
-	
+
 	pck->put_int(pck, tmp->len);
 	pck->put_str(pck, (const char *) tmp->data);
-	
+
 }
 
 int get_int(struct packet * pck)
 {
-
+	int ret;
+	LOAD32H(ret, pck->data);
+	pck->rd_pos += 4;
+	return ret;
 }
 
 unsigned char get_char(struct packet * pck)
@@ -93,22 +114,46 @@ unsigned char get_char(struct packet * pck)
 
 char* get_str(struct packet * pck)
 {
-
+	/* Probably not safe to assume a string is zero terminated */
 }
 
 unsigned char get_byte(struct packet * pck)
 {
-
+	unsigned char ret;
+	ret = ((unsigned char *) pck->data)[pck->rd_pos];
+	pck->rd_pos++;
+	return ret;
 }
 
-char* get_bytes(struct packet *pck, int num)
+unsigned char* get_bytes(struct packet *pck, int num)
 {
-
+	unsigned char *ret;
+	ret = malloc(num);
+	memcpy(ret, pck->data, num);
+	pck->rd_pos += num;
 }
 
 struct exchange_list * get_exch_list(struct packet * pck)
 {
-
+	struct exchange_list *ret;
+	int len;
+	int pos;
+	
+	ret = malloc(sizeof(struct exchange_list));
+	
+	len = get_int(pck);
+	
+	int x;
+	for(x = 0; x < len; x++) {
+		if(((unsigned char *)pck->data)[x] == ',' || x == len) {
+			//ret.algos[ret.num] = malloc(sizeof(struct exchange_list));
+			//ret.algos[ret.num] = calloc(x + 1, 1);
+			memcpy((void *)ret->algos[ret->num].name, get_bytes(pck->data, 
+				(pck->rd_pos - x)), pck->rd_pos - x); 
+		}
+	}
+	
+	return ret;
 }
 
 void packet_init(struct packet * pck)

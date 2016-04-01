@@ -116,6 +116,8 @@ int main(int argc, char** argv)
 
 	if (connect_to_remote_host() > -1)
 		identify();
+	else
+		perror("connect()");
 
 	if (session.state == IDENTIFIED)
 		kex_init();

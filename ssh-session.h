@@ -22,6 +22,7 @@
 
 #include "buffer.h"
 #include "build.h"
+#include "crypto.h"
 #include "ssh-channel.h"
 #include "ssh-packet.h"
 
@@ -57,6 +58,8 @@ struct session {
 	
 	/* Number of kex'es (initial + renegotiation) */
 	int kex_num;
+	
+	struct crypto *crypto;
 
 	struct channel **channels;
 
