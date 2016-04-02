@@ -67,13 +67,15 @@ struct session {
 	 * after a read. Is put in ingoing buffer if
 	 * complete. */
 	struct packet *packet_part;
+	int packet_flag;
 
 	struct buffer *buf_in;
 	struct buffer *buf_out;
 
 	int (*write_packet)(struct packet *pck);
-	struct packet* (*read_packet)(void);
-	struct packet* (*read_bin_packet)(void);
+	struct packet* (*read_packet)();
+	void (*process_packet)();
+	
 
 	/* Initial identification */
 	void (*identify)();

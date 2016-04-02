@@ -26,6 +26,12 @@
 #include "misc.h"
 #include "ssh-session.h"
 
+int kex_status = 0;
+
+/* Forward declarations */
+static void kex_negotiate(struct packet *pck);
+static char* kex_try_match(struct exchange_list* rem, struct exchange_list* loc);
+
 /* List of supported kex algorithms */
 struct exchange_list kex_list = {
 
@@ -84,15 +90,14 @@ struct exchange_list hash_list = {
 
 	.algos =
 	{
-		{"hmac-sha1-96", NULL},
-		{"hmac-sha1", NULL},
-		{"hmac-sha2-256", NULL},
-		{"hmac-sha2-512", NULL},
-		{"hmac-md5", NULL},
-		{"none",},
+		{"hmac-sha1", &sha1_desc},
+		{"hmac-sha2-256", &sha256_desc},
+		{"hmac-sha2-512", &sha512_desc},
+		{"hmac-md5", &md5_desc},
+		{"none", NULL},
 	},
 
-	.num = 6
+	.num = 5
 
 };
 
@@ -178,7 +183,10 @@ void kex_init()
 	if(kex_resp->get_int(kex_resp) == SSH_MSG_KEXINIT)
 		kex_negotiate(kex_resp);
 	else
-		ssh_err("Expected remote KEX_INIT. Found something else\n", -1);
+		ssh_err("Expected remote KEX_INIT. Found something else", -1);
+	
+	if(kex_status & KEX_FAIL)
+		ssh_err("KEX failed", -1);
 	
 	struct packet *kex_resp_2;
 	kex_resp_2 = session.read_packet();
@@ -194,22 +202,47 @@ static void kex_negotiate(struct packet *pck)
 	/* Skip the 16 byte cookie */
 	pck->rd_pos += 16;
 	
-	kex_try_match(pck->get_exch_list(pck), kex_list);
-	kex_try_match(pck->get_exch_list(pck), host_list);
-	kex_try_match(pck->get_exch_list(pck), cipher_list);
-	kex_try_match(pck->get_exch_list(pck), hash_list);
-	kex_try_match(pck->get_exch_list(pck), compress_list);
-	kex_try_match(pck->get_exch_list(pck), lang_list);
+	session.crypto->keys.kex.name = 
+		kex_try_match(pck->get_exch_list(pck), &kex_list);
+	
+	session.crypto->keys.host.name = 
+		kex_try_match(pck->get_exch_list(pck), &host_list);
+	
+	session.crypto->keys.ciper.name = 
+		kex_try_match(pck->get_exch_list(pck), &cipher_list);
+	
+	session.crypto->keys.hash.name = 
+		kex_try_match(pck->get_exch_list(pck), &hash_list);
+	
+	session.crypto->keys.compress.name = 
+		kex_try_match(pck->get_exch_list(pck), &compress_list);
+	
+	session.crypto->keys.lang.name = 
+		kex_try_match(pck->get_exch_list(pck), &lang_list);
 }
 
 /* Try to match remote and local version of single algorithm */
-static void kex_try_match(struct exchange_list rem, struct exchange_list loc)
+static char* kex_try_match(struct exchange_list *rem, struct exchange_list *loc)
 {
+	int x, y;
+	for(x = 0; x < rem->num; x++) {
+		for(y = 0; y < loc->num; y++) {
+			if(strcmp(rem->algos[x].name, loc->algos[y].name))
+				return rem->algos[x].name;
+		}
+	}
 	
+	kex_status |= KEX_FAIL;
 }
 
 /* Send a KEX guess */
 void kex_guess()
 {
 
+}
+
+/* Diffie-Hellman shared secret computation */
+void kex_dh_compute
+{
+	
 }

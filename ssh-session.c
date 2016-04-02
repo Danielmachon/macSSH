@@ -47,45 +47,61 @@ int write_packet(struct packet *pck)
 	return len;
 }
 
-/* Read whatever is on the socket descriptor and return it,
- * as a packet */
-struct packet* read_packet(void)
+/* Read the first 16 bytes, or cipher block-size, whichever is larger,
+ * of a pending packet */
+static int try_read_packet(struct packet *pck)
 {
 	int len = 0;
-	struct packet *pck = packet_new(1514);
 
-	len = read(session.sock_in, pck->data, 1514);
-
-	if(len == 0)
-		fprintf(stderr, "read() returned 0\n");
-	else if(len < 0)
-		fprintf(stderr, "read() returned -1\n");
-
-	pck->len = len;
+	len = read(session.sock_in, pck->data, 16);
+	
+	if(len == 16)
+		return len;
+	else
+		return -1;
 }
 
-/* Read binary packet. If the whole packet cant be read,
+/* Read packet. If the whole packet cant be read,
  * the read content is placed in a temporary packet. */
-struct packet* read_bin_packet(void)
+struct packet* read_packet(void)
 {
-	int len = 0;
+	int rd_len = 0;
 	struct packet *pck;
+	pck = packet_new(1514);
+	
 	(session.packet_part == NULL) ? 
 		(pck = packet_new(1514)) : (pck = session.packet_part);
-
-	len = read(session.sock_out, pck->data + pck->len, 1514);
-
-	pck->len = len;
-
-	/* Check if we have the whole packet */
-	if (((char*) pck->data)[0] == pck->len) {
-		session.buf_in->buf_add(session.buf_in, pck);
-	} else {
+	
+	rd_len = try_read_packet(pck);
+	
+	if(rd_len < 16) {
+		(session.packet_part == NULL) ? (session.packet_part = pck) : 
+			ssh_exit("Could not read packet in 2 tries", -1);
+		return NULL;
+	}
+	
+	/* We have enough info to determine the length of the packet */
+	int pck_len;
+	pck_len = pck->get_int(pck);
+	
+	rd_len = read(session.sock_out, pck->data + pck->len, (pck_len - 16));
+	
+	if(rd_len != (pck_len - 16)) {
 		session.packet_part = pck;
 		return NULL;
 	}
+	
+	/* We have the whole packet. Place it in ingoing buffer*/
+	session.buf_in->buf_add(session.buf_in, pck);
 
 	return pck;
+}
+
+void process_packet()
+{
+	struct packet *pck;
+	
+	pck = session.buf_in->buf_get(session.buf_in);
 }
 
 /* Identify with remote host. 
@@ -145,7 +161,6 @@ void session_init(struct session *ses)
 	memset(ses->crypto, 0, sizeof(struct crypto));
 
 	ses->read_packet = &read_packet;
-	ses->read_bin_packet = &read_bin_packet;
 	ses->write_packet = &write_packet;
 }
 

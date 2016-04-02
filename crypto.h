@@ -43,6 +43,7 @@ struct keys {
 struct crypto {
 	
 	struct keys keys;
+	struct keys old_keys;
 	
 };
 

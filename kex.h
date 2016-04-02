@@ -26,8 +26,13 @@
 #ifndef KEX_H
 #define KEX_H
 
+enum {
+	KEX_OK =	0b00000001,
+	KEX_FAIL =	0b00000010
+};
+
 struct algorithm {
-	const char *name;
+	char *name;
 	void *algorithm;
 };
 
@@ -35,6 +40,8 @@ struct exchange_list {
 	int num;
 	struct algorithm algos[];
 };
+
+extern int kex_status;
 
 extern struct exchange_list kex_list;
 extern struct exchange_list host_list;

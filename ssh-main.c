@@ -119,8 +119,9 @@ int main(int argc, char** argv)
 	else
 		perror("connect()");
 
-	if (session.state == IDENTIFIED)
+	if (session.state == IDENTIFIED) {
 		kex_init();
+	}
 
 	if (session.state == KEXED)
 		client_session_loop();
