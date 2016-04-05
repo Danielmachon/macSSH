@@ -28,6 +28,7 @@ void client_session_loop()
 	for (;;) {
 
 	}
+	
 loop_out:
 ;
 }

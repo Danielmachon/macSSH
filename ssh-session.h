@@ -60,6 +60,8 @@ struct session {
 	int kex_num;
 	
 	struct crypto *crypto;
+	
+	struct diffie_hellman *dh;
 
 	struct channel **channels;
 

@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "misc.h"
+#include "options.h"
 
 
 void ssh_print(const char *msg)
@@ -73,20 +74,4 @@ void ssh_print_embedded_string(void *data, int len)
 			start = end = 0;
 		}
 	}
-}
-
-void ssh_debug(const char *msg)
-{
-	fprintf(stderr, "%s\n", msg);
-}
-
-void ssh_err(const char *msg, int err)
-{
-	fprintf(stderr, "%s: %s", msg, strerror(err));
-}
-
-void ssh_exit(const char *msg, int err)
-{
-	ssh_err(msg, err);
-	exit(EXIT_FAILURE);
 }

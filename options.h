@@ -26,6 +26,10 @@
 #ifndef OPTIONS_H
 #define OPTIONS_H
 
+#define SHA1_HASH_SIZE 20
+#define MD5_HASH_SIZE 16
+#define MAX_HASH_SIZE 64 /* sha512 */
+
 struct options {
 	
 	/* SSH options */

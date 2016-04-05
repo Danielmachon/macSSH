@@ -41,6 +41,8 @@ struct buffer {
 	struct packet* (*buf_remove)(struct buffer *buf);
 	int (*buf_isempty)(struct buffer *buf);
 	int (*buf_len)(struct buffer *buf);
+	
+	struct packet* (*buf_get)(struct buffer *buf);
 
 };
 

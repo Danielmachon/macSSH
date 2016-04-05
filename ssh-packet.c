@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "ssh-packet.h"
 #include "kex.h"
+#include "misc.h"
 
 void put_size(struct packet *pck, int data)
 {
@@ -74,6 +75,26 @@ void put_int(struct packet *pck, int data)
 	pck->len += 4;
 }
 
+/* If the most significant bit would be set for
+ * a positive number, the number MUST be preceded by a zero byte.
+ * Unnecessary leading bytes with the value 0 or 255 MUST NOT be
+ * included.  The value zero MUST be stored as a string with zero
+ * bytes of data. */
+void put_mpint(struct packet *pck, mp_int *mpi)
+{
+	/* Determine length */
+	unsigned int len = (mp_count_bits(mpi) / 8 + 1);
+
+	pck->put_int(pck, len);
+
+	/* Check if we should pad with a preceding zero byte */
+	if (len % 8 == 0)
+		pck->put_byte(pck, 0x00);
+
+	if (mp_to_unsigned_bin(mpi, pck) != MP_OKAY)
+		ssh_exit("error in put_mpint", errno);
+}
+
 void put_str(struct packet *pck, const char *data)
 {
 	memmove(((char*) pck->data) + pck->len, data, strlen(data));
@@ -102,9 +123,34 @@ void put_exch_list(struct packet* pck, struct exchange_list* data)
 int get_int(struct packet * pck)
 {
 	int ret;
-	LOAD32H(ret, pck->data);
+	LOAD32H(ret, pck->data + pck->rd_pos);
 	pck->rd_pos += 4;
 	return ret;
+}
+
+mp_int* get_mpint(struct packet *pck)
+{
+	mp_int *mpi;
+	mp_init(mpi);
+
+	unsigned int len = pck->get_int(pck);
+
+	if (len < 0)
+		ssh_exit("error in get_mpint", errno);
+
+	/* Check if ms bit is set */
+	if (*(unsigned char *)(pck->data + pck->rd_pos) & (1 << (CHAR_BIT - 1)))
+		ssh_exit("error in get_mpint", errno);
+
+	if (mp_read_unsigned_bin(mpi, pck->data + pck->rd_pos, len) != MP_OKAY)
+		ssh_exit("error in get_mpint", errno);
+	
+	/* Increment read position */
+	pck->data += len;
+	
+	/* Remember to free */
+	return mpi;
+	
 }
 
 unsigned char get_char(struct packet * pck)
@@ -138,21 +184,21 @@ struct exchange_list * get_exch_list(struct packet * pck)
 	struct exchange_list *ret;
 	int len;
 	int pos;
-	
+
 	ret = malloc(sizeof(struct exchange_list));
-	
+
 	len = get_int(pck);
-	
+
 	int x;
-	for(x = 0; x < len; x++) {
-		if(((unsigned char *)pck->data)[x] == ',' || x == len) {
+	for (x = 0; x < len; x++) {
+		if (((unsigned char *) pck->data)[x] == ',' || x == len) {
 			//ret.algos[ret.num] = malloc(sizeof(struct exchange_list));
 			//ret.algos[ret.num] = calloc(x + 1, 1);
-			memcpy((void *)ret->algos[ret->num].name, get_bytes(pck->data, 
-				(pck->rd_pos - x)), pck->rd_pos - x); 
+			memcpy((void *) ret->algos[ret->num].name, get_bytes(pck->data,
+				(pck->rd_pos - x)), pck->rd_pos - x);
 		}
 	}
-	
+
 	return ret;
 }
 

@@ -26,9 +26,17 @@
 #ifndef KEX_H
 #define KEX_H
 
+#include "libtommath/tommath.h"
+
+
 enum {
 	KEX_OK =	0b00000001,
 	KEX_FAIL =	0b00000010
+};
+
+struct diffie_hellman {
+	mp_int pub_key;
+	mp_int priv_key;
 };
 
 struct algorithm {
