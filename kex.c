@@ -17,13 +17,11 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <unistd.h>
-
-#include "includes.h"
 #include "kex.h"
+#include "includes.h"
+#include "misc.h"
 #include "ssh-packet.h"
 #include "ssh-numbers.h"
-#include "misc.h"
 #include "ssh-session.h"
 
 int kex_status = 0;
@@ -185,10 +183,10 @@ void kex_init()
 	if (kex_resp->get_int(kex_resp) == SSH_MSG_KEXINIT)
 		kex_negotiate(kex_resp);
 	else
-		ssh_err("Expected remote KEX_INIT. Found something else", -1);
+		macssh_err("Expected remote KEX_INIT. Found something else", -1);
 
 	if (kex_status & KEX_FAIL)
-		ssh_err("KEX failed", -1);
+		macssh_err("KEX failed", -1);
 
 	struct packet *kex_resp_2;
 	kex_resp_2 = session.read_packet();
@@ -265,15 +263,15 @@ struct diffie_hellman* kex_dh_compute()
 
 	/* Set the dh g value */
 	if (mp_set_int(&dh_g, DH_G_VAL) != MP_OKAY)
-		ssh_err("Diffie-Hellman error", errno);
+		macssh_err("Diffie-Hellman error", errno);
 
 	/* calculate q = (p-1)/2 */
 	/* dh_priv is just a temp var here */
 	if (mp_sub_d(&dh_p, 1, &dh_vals->priv_key) != MP_OKAY)
-		ssh_err("Diffie-Hellman error", errno);
+		macssh_err("Diffie-Hellman error", errno);
 
 	if (mp_div_2(&dh_vals->priv_key, &dh_q) != MP_OKAY)
-		ssh_err("Diffie-Hellman error", errno);
+		macssh_err("Diffie-Hellman error", errno);
 
 	/* Generate a private portion 0 < dh_priv < dh_q */
 	gen_random_mpint(&dh_q, &dh_vals->priv_key);
@@ -281,7 +279,7 @@ struct diffie_hellman* kex_dh_compute()
 	/* f = g^y mod p 
 	 * public key portion */
 	if (mp_exptmod(&dh_g, &dh_vals->priv_key, &dh_p, &dh_vals->pub_key) != MP_OKAY)
-		ssh_err("Diffie-Hellman error", errno);
+		macssh_err("Diffie-Hellman error", errno);
 
 	mp_clear_multi(&dh_g, &dh_p, &dh_q, NULL);
 

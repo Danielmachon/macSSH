@@ -23,12 +23,17 @@
  * Created on March 23, 2016, 10:49 PM
  */
 
-#ifndef OPTIONS_H
-#define OPTIONS_H
+#ifndef SSH_OPTIONS_H
+#define SSH_OPTIONS_H
+
+#define MACSSH_SUCCESS	0
+#define MACSSH_FAILURE	-1
 
 #define SHA1_HASH_SIZE 20
 #define MD5_HASH_SIZE 16
 #define MAX_HASH_SIZE 64 /* sha512 */
+
+#define MACSSH_URANDOM_DEV "/dev/urandom"
 
 struct options {
 	

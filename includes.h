@@ -29,6 +29,7 @@
 #include <arpa/inet.h>
 #include <bits/errno.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <getopt.h>
 #include <netdb.h>
 #include <stdint.h>
@@ -36,6 +37,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 #include <unistd.h>
 
 /* tomcrypt and tommath */

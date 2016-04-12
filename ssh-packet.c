@@ -92,7 +92,7 @@ void put_mpint(struct packet *pck, mp_int *mpi)
 		pck->put_byte(pck, 0x00);
 
 	if (mp_to_unsigned_bin(mpi, pck) != MP_OKAY)
-		ssh_exit("error in put_mpint", errno);
+		macssh_exit("error in put_mpint", errno);
 }
 
 void put_str(struct packet *pck, const char *data)
@@ -136,14 +136,14 @@ mp_int* get_mpint(struct packet *pck)
 	unsigned int len = pck->get_int(pck);
 
 	if (len < 0)
-		ssh_exit("error in get_mpint", errno);
+		macssh_exit("error in get_mpint", errno);
 
 	/* Check if ms bit is set */
 	if (*(unsigned char *)(pck->data + pck->rd_pos) & (1 << (CHAR_BIT - 1)))
-		ssh_exit("error in get_mpint", errno);
+		macssh_exit("error in get_mpint", errno);
 
 	if (mp_read_unsigned_bin(mpi, pck->data + pck->rd_pos, len) != MP_OKAY)
-		ssh_exit("error in get_mpint", errno);
+		macssh_exit("error in get_mpint", errno);
 	
 	/* Increment read position */
 	pck->data += len;

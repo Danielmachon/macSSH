@@ -28,7 +28,7 @@
 #include "misc.h"
 #include "ssh-session.h"
 #include "util.h"
-#include "options.h"
+#include "ssh-options.h"
 #include "kex.h"
 
 void ssh_version()

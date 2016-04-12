@@ -19,20 +19,20 @@
 
 #include "includes.h"
 #include "misc.h"
-#include "options.h"
+#include "ssh-options.h"
 
 
-void ssh_print(const char *msg)
+void macssh_print(const char *msg)
 {
 	printf("%s\n", msg);
 }
 
-void ssh_print_file(FILE *file, const char *msg)
+void macssh_print_file(FILE *file, const char *msg)
 {
 	fprintf(file, "%s\n", msg);
 }
 
-void ssh_print_array(void *data, int len)
+void macssh_print_array(void *data, int len)
 {
 	int x;
 	for(x = 0; x < len; x++)  {
@@ -43,7 +43,7 @@ void ssh_print_array(void *data, int len)
 }
 
 /* Attempt to print any embedded string in byte array */
-void ssh_print_embedded_string(void *data, int len)
+void macssh_print_embedded_string(void *data, int len)
 {
 	unsigned char *ptr = (unsigned char * )data;
 	

@@ -77,7 +77,7 @@ struct packet* read_packet(void)
 	
 	if(rd_len < 16) {
 		(session.packet_part == NULL) ? (session.packet_part = pck) : 
-			ssh_exit("Could not read packet in 2 tries", -1);
+			macssh_exit("Could not read packet in 2 tries", -1);
 		return NULL;
 	}
 	
@@ -113,17 +113,17 @@ void identify()
 	struct packet *rem_id_pck = session.read_packet();
 
 	if (errno == EWOULDBLOCK || errno == EAGAIN)
-		ssh_exit("failed in identify()", errno);
+		macssh_exit("failed in identify()", errno);
 
 	fprintf(stderr, "%s\n", rem_id_pck->data);
 
 	if (memcmp(rem_id_pck->data, "SSH-2.0", 7) == 0)
-		ssh_print("Found supported remote SSH version\n");
+		macssh_print("Found supported remote SSH version\n");
 	else
-		ssh_print("Found unsupported SSH version\n");
+		macssh_print("Found unsupported SSH version\n");
 
 	if (memcmp(rem_id_pck->data + 7, "DMA-SSH", 7) == 0)
-		ssh_print("Seems like remote host is using DMA-SSH");
+		macssh_print("Seems like remote host is using DMA-SSH");
 
 	struct packet *loc_id_pck = packet_new(64);
 

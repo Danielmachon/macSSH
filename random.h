@@ -17,22 +17,21 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /* 
- * File:   misc.h
+ * File:   random.h
  * Author: dmachon
  *
- * Created on March 23, 2016, 10:54 PM
+ * Created on April 5, 2016, 10:30 PM
  */
 
-#ifndef MISC_H
-#define MISC_H
+#ifndef RANDOM_H
+#define RANDOM_H
 
-void macssh_print(const char *msg);
-void macssh_print_file(FILE *file, const char *msg);
-void macssh_print_array(void *data, int len);
-void macssh_print_embedded_string(void *data, int len);
-void macssh_debug(const char *msg);
-void macssh_err(const char *msg, int err);
-void macssh_exit(const char *msg, int err);
+#include "includes.h"
 
-#endif /* MISC_H */
+void seedrandom();
+void genrandom(unsigned char* buf, unsigned int len);
+void addrandom(unsigned char * buf, unsigned int len);
+void gen_random_mpint(mp_int *max, mp_int *rand);
+
+#endif /* RANDOM_H */
 
