@@ -40,8 +40,9 @@ void read_identification_string();
 enum {
 	NONE = 0,
 	IDENTIFIED = 1,
-	KEXED = 2,
-	SETUP = 3,
+	HAVE_KEX_INIT = 2,
+	KEXED = 3,
+	SETUP = 4,
 };
 
 struct session {
@@ -55,6 +56,8 @@ struct session {
 
 	int rx;
 	int tx;
+	
+	char remote_id[256];
 	
 	/* Number of kex'es (initial + renegotiation) */
 	int kex_num;

@@ -28,9 +28,9 @@ void client_session_loop()
 	for (;;) {
 
 	}
-	
+
 loop_out:
-;
+	;
 }
 
 void server_session_loop()
@@ -55,8 +55,8 @@ static int try_read_packet(struct packet *pck)
 	int len = 0;
 
 	len = read(session.sock_in, pck->data, 16);
-	
-	if(len == 16)
+
+	if (len == 16)
 		return len;
 	else
 		return -1;
@@ -68,30 +68,29 @@ struct packet* read_packet(void)
 {
 	int rd_len = 0;
 	struct packet *pck;
-	pck = packet_new(1514);
-	
-	(session.packet_part == NULL) ? 
+
+	(session.packet_part == NULL) ?
 		(pck = packet_new(1514)) : (pck = session.packet_part);
-	
+
 	rd_len = try_read_packet(pck);
-	
-	if(rd_len < 16) {
-		(session.packet_part == NULL) ? (session.packet_part = pck) : 
+
+	if (rd_len < 16) {
+		(session.packet_part == NULL) ? (session.packet_part = pck) :
 			macssh_exit("Could not read packet in 2 tries", -1);
 		return NULL;
 	}
-	
+
 	/* We have enough info to determine the length of the packet */
 	int pck_len;
 	pck_len = pck->get_int(pck);
-	
+
 	rd_len = read(session.sock_out, pck->data + pck->len, (pck_len - 16));
-	
-	if(rd_len != (pck_len - 16)) {
+
+	if (rd_len != (pck_len - 16)) {
 		session.packet_part = pck;
 		return NULL;
 	}
-	
+
 	/* We have the whole packet. Place it in ingoing buffer*/
 	session.buf_in->buf_add(session.buf_in, pck);
 
@@ -101,7 +100,7 @@ struct packet* read_packet(void)
 void process_packet()
 {
 	struct packet *pck;
-	
+
 	pck = session.buf_in->buf_get(session.buf_in);
 }
 
@@ -110,21 +109,6 @@ void process_packet()
  * descriptor. */
 void identify()
 {
-	struct packet *rem_id_pck = session.read_packet();
-
-	if (errno == EWOULDBLOCK || errno == EAGAIN)
-		macssh_exit("failed in identify()", errno);
-
-	fprintf(stderr, "%s\n", rem_id_pck->data);
-
-	if (memcmp(rem_id_pck->data, "SSH-2.0", 7) == 0)
-		macssh_print("Found supported remote SSH version\n");
-	else
-		macssh_print("Found unsupported SSH version\n");
-
-	if (memcmp(rem_id_pck->data + 7, "DMA-SSH", 7) == 0)
-		macssh_print("Seems like remote host is using DMA-SSH");
-
 	struct packet *loc_id_pck = packet_new(64);
 
 	loc_id_pck->put_str(loc_id_pck, IDENTIFICATION_STRING);
@@ -140,10 +124,51 @@ void identify()
 			loc_id_pck->wr_pos, loc_id_pck->len);
 	}
 
-	free(rem_id_pck);
-	free(loc_id_pck);
 
-	session.state = IDENTIFIED;
+	read_identification_string();
+
+	if (errno == EWOULDBLOCK || errno == EAGAIN)
+		macssh_exit("failed in identify()", errno);
+
+	free(loc_id_pck);
+}
+
+void read_identification_string()
+{
+	struct packet *pck;
+	pck = packet_new(1514);
+	int len = 0;
+
+	pck->len = read(session.sock_in, pck->data, 1514);
+
+	/* Some implementations will send the KEXINIT immediately after
+	 * the identification string. Check for that and increment the read,
+	 * position accordingly. */
+	int x;
+	for (x = 0; x < pck->len; x++) {
+		if (((unsigned char *) pck->data)[x] == '\r' &&
+			((unsigned char *) pck->data)[x + 1] == '\n') {
+			strncpy(session.remote_id,
+				(unsigned char *) pck->data, x);
+			pck->rd_pos += (x + 2);
+			break;
+		}
+
+	}
+
+	if (x + 2 == pck->len) {
+		free(pck);
+		session.state = IDENTIFIED;
+	} else {
+		macssh_debug("Seems like serverside has sent id string,"
+			" and kexinit immediately after each other\n");
+
+		session.state = HAVE_KEX_INIT;
+		session.packet_part = pck;
+	}
+
+	fprintf(stderr, "Found identification string: %s\n",
+		session.remote_id);
 }
 
 void session_init(struct session *ses)
@@ -157,7 +182,7 @@ void session_init(struct session *ses)
 	ses->buf_out = buf_new();
 
 	ses->packet_part = packet_new(PACKET_MAX_SIZE);
-	
+
 	ses->crypto = malloc(sizeof(struct crypto));
 	memset(ses->crypto, 0, sizeof(struct crypto));
 

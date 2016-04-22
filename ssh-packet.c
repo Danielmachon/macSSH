@@ -32,6 +32,7 @@ void put_pad_size(struct packet *pck, int data)
 	((unsigned char *) pck->data)[4] = data;
 }
 
+/* Fill our the meta-data of the packet */
 void put_stamp(struct packet* pck)
 {
 
@@ -91,7 +92,7 @@ void put_mpint(struct packet *pck, mp_int *mpi)
 	if (len % 8 == 0)
 		pck->put_byte(pck, 0x00);
 
-	if (mp_to_unsigned_bin(mpi, pck) != MP_OKAY)
+	if (mp_to_unsigned_bin(mpi, (unsigned char *) pck->data) != MP_OKAY)
 		macssh_exit("error in put_mpint", errno);
 }
 
@@ -101,7 +102,7 @@ void put_str(struct packet *pck, const char *data)
 	pck->len += strlen(data);
 }
 
-void put_exch_list(struct packet* pck, struct exchange_list* data)
+void put_exch_list(struct packet* pck, struct exchange_list_local* data)
 {
 	struct packet *tmp = packet_new(1024);
 
@@ -139,18 +140,18 @@ mp_int* get_mpint(struct packet *pck)
 		macssh_exit("error in get_mpint", errno);
 
 	/* Check if ms bit is set */
-	if (*(unsigned char *)(pck->data + pck->rd_pos) & (1 << (CHAR_BIT - 1)))
+	if (*(unsigned char *) (pck->data + pck->rd_pos) & (1 << (CHAR_BIT - 1)))
 		macssh_exit("error in get_mpint", errno);
 
 	if (mp_read_unsigned_bin(mpi, pck->data + pck->rd_pos, len) != MP_OKAY)
 		macssh_exit("error in get_mpint", errno);
-	
+
 	/* Increment read position */
 	pck->data += len;
-	
+
 	/* Remember to free */
 	return mpi;
-	
+
 }
 
 unsigned char get_char(struct packet * pck)
@@ -175,27 +176,54 @@ unsigned char* get_bytes(struct packet *pck, int num)
 {
 	unsigned char *ret;
 	ret = malloc(num);
-	memcpy(ret, pck->data, num);
+	memcpy(ret, pck->data + pck->rd_pos, num);
 	pck->rd_pos += num;
+	return ret;
 }
 
-struct exchange_list * get_exch_list(struct packet * pck)
+/* Iterate through remote KEX_INIT packet */
+struct exchange_list_remote* get_exch_list(struct packet * pck)
 {
-	struct exchange_list *ret;
+	struct exchange_list_remote *ret;
 	int len;
 	int pos;
 
-	ret = malloc(sizeof(struct exchange_list));
+	/* Initialize exchange list and make room for 10 initial
+	 * algorithms - realloc if necessaray */
+	ret = malloc(sizeof(struct exchange_list_remote));
+	ret->algos = malloc(sizeof(struct algorithm *) * 10);
+	ret->num = 10;
+	ret->end = 0;
 
 	len = get_int(pck);
+	pos = pck->rd_pos;
 
 	int x;
-	for (x = 0; x < len; x++) {
-		if (((unsigned char *) pck->data)[x] == ',' || x == len) {
-			//ret.algos[ret.num] = malloc(sizeof(struct exchange_list));
-			//ret.algos[ret.num] = calloc(x + 1, 1);
-			memcpy((void *) ret->algos[ret->num].name, get_bytes(pck->data,
-				(pck->rd_pos - x)), pck->rd_pos - x);
+	for (x = pos; x <= pos + len; x++) {
+		if (((unsigned char *) pck->data)[x] == ',' || 
+		x == (len + pos)) {
+
+			if (ret->end >= ret->num) {
+				ret->algos = realloc(ret->algos,
+					sizeof(struct algorithm) * ret->num + 5);
+				ret->num += 5;
+			}
+
+			ret->algos[ret->end] =
+				malloc(sizeof(struct algorithm));
+
+			unsigned char *name;
+			name = pck->get_bytes(pck, (x - pck->rd_pos));
+			
+			if(x != (len + pos))
+				pck->rd_pos++;
+
+			ret->algos[ret->end]->name = name;
+
+			fprintf(stderr, "%s\n", ret->algos[ret->end]->name);
+
+			ret->end++;
+
 		}
 	}
 
@@ -207,12 +235,19 @@ void packet_init(struct packet * pck)
 	pck->len = 0;
 	pck->wr_pos = 0;
 
+	/* Puts */
 	pck->put_byte = &put_byte;
 	pck->put_char = &put_char;
 	pck->put_int = &put_int;
 	pck->put_str = &put_str;
 	pck->put_bytes = &put_bytes;
 	pck->put_exch_list = &put_exch_list;
+
+	/* Gets */
+	pck->get_int = &get_int;
+	pck->get_byte = &get_byte;
+	pck->get_bytes = &get_bytes;
+	pck->get_exch_list = &get_exch_list;
 }
 
 struct packet * packet_new(unsigned int size)

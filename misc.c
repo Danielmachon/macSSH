@@ -21,6 +21,20 @@
 #include "misc.h"
 #include "ssh-options.h"
 
+void macssh_exit(const char *msg, int err)
+{
+	
+}
+
+void macssh_err(const char *msg, int err)
+{
+	
+}
+
+void macssh_debug(const char *msg)
+{
+	fprintf(stderr, "%s\n", msg);
+}
 
 void macssh_print(const char *msg)
 {

@@ -29,11 +29,14 @@ const int DH_G_VAL = 2;
 
 /* Forward declarations */
 static void kex_negotiate(struct packet *pck);
-static char* kex_try_match(struct exchange_list* rem, struct exchange_list* loc);
+static char* kex_try_match(struct exchange_list_remote* rem, 
+	struct exchange_list_local* loc);
 struct diffie_hellman* kex_dh_compute();
+struct packet* kex_dh_init();
+struct packet* kex_dh_reply();
 
 /* List of supported kex algorithms */
-struct exchange_list kex_list = {
+struct exchange_list_local kex_list = {
 
 	.algos =
 	{
@@ -47,7 +50,7 @@ struct exchange_list kex_list = {
 };
 
 /* List of supported host keys */
-struct exchange_list host_list = {
+struct exchange_list_local host_list = {
 
 	.algos =
 	{
@@ -62,7 +65,7 @@ struct exchange_list host_list = {
 /* List of supported ciphers.
  * The first cipher on this list, that is also supported,
  * by the server, will be chosen */
-struct exchange_list cipher_list = {
+struct exchange_list_local cipher_list = {
 
 	.algos =
 	{
@@ -86,7 +89,7 @@ struct exchange_list cipher_list = {
 };
 
 /* List of supported hashes */
-struct exchange_list hash_list = {
+struct exchange_list_local hash_list = {
 
 	.algos =
 	{
@@ -102,7 +105,7 @@ struct exchange_list hash_list = {
 };
 
 /* List of supported compression algortihms */
-struct exchange_list compress_list = {
+struct exchange_list_local compress_list = {
 
 	.algos =
 	{
@@ -116,7 +119,7 @@ struct exchange_list compress_list = {
 };
 
 /* List of supported language */
-struct exchange_list lang_list = {
+struct exchange_list_local lang_list = {
 
 	.algos =
 	{
@@ -177,23 +180,65 @@ void kex_init()
 		fprintf(stderr, "All bytes were transmitted\n");
 
 	struct packet *kex_resp;
-	kex_resp = session.read_packet();
-	kex_resp->rd_pos = 5;
+	
+	if(session.state == HAVE_KEX_INIT) {
+		kex_resp = session.packet_part;
+	}
+	else {
+		kex_resp = session.read_packet();
+	}
+	
+	kex_resp->rd_pos += 5;
 
-	if (kex_resp->get_int(kex_resp) == SSH_MSG_KEXINIT)
+	if (kex_resp->get_byte(kex_resp) == SSH_MSG_KEXINIT)
 		kex_negotiate(kex_resp);
 	else
 		macssh_err("Expected remote KEX_INIT. Found something else", -1);
 
 	if (kex_status & KEX_FAIL)
 		macssh_err("KEX failed", -1);
+	
+	/* Send our part of the diffie-hellman kex */
+	session.write_packet(kex_dh_init());
 
 	struct packet *kex_resp_2;
 	kex_resp_2 = session.read_packet();
 
 	//ssh_print_embedded_string(kex_resp_2->data, kex_resp_2->len);
+}
 
+/* Initialize the diffie-hellman part of the key-exchange.
+ * This will be done initially after connection has been,
+ * established, but can also occur anytime during a session. */
+struct packet* kex_dh_init()
+{
+	struct packet *pck = packet_new(1024);
+	
+	pck->len = 5; //Make room for size and pad size
+	char cookie[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+	char pads[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
+	pck->put_byte(pck, SSH_MSG_KEXDH_INIT);
+	pck->put_bytes(pck, cookie, 16);
+	
+	struct diffie_hellman *dh;
+	dh = kex_dh_compute();
+	
+	pck->put_mpint(pck, &dh->pub_key);
+	
+	//pck->put_byte(pck, 1); //No guess
+	//pck->put_int(pck, 0); //Reserved
+
+	/* Stamp with metadata */
+	put_stamp(pck);	
+	
+	return pck;
+}
+
+/* Server response to a client kex_dh_init */
+struct packet* kex_dh_reply()
+{
+	
 }
 
 /* Negotiate algorithms by mathing remote and local versions */
@@ -224,13 +269,14 @@ static void kex_negotiate(struct packet *pck)
 }
 
 /* Try to match remote and local version of single algorithm */
-static char* kex_try_match(struct exchange_list *rem, struct exchange_list *loc)
+static char* kex_try_match(struct exchange_list_remote *rem, 
+	struct exchange_list_local *loc)
 {
 	int x, y;
-	for (x = 0; x < rem->num; x++) {
+	for (x = 0; x < rem->end; x++) {
 		for (y = 0; y < loc->num; y++) {
-			if (strcmp(rem->algos[x].name, loc->algos[y].name))
-				return rem->algos[x].name;
+			if (strcmp(rem->algos[x]->name, loc->algos[y].name) == 0)
+				return rem->algos[x]->name;
 		}
 	}
 
@@ -253,7 +299,7 @@ struct diffie_hellman* kex_dh_compute()
 	mp_int dh_g = {0, 0, 0, 0};
 
 	/* Initialize dh struct and mp_int's */
-	dh_vals = malloc(sizeof(*dh_vals));
+	dh_vals = malloc(sizeof(struct diffie_hellman));
 	mp_init_multi(&dh_vals->pub_key, &dh_vals->priv_key, &dh_g, &dh_p, &dh_q, NULL);
 
 	/* read the prime and generator*/

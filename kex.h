@@ -44,22 +44,31 @@ struct algorithm {
 	void *algorithm;
 };
 
-struct exchange_list {
+struct exchange_list_local {
 	int num;
 	struct algorithm algos[];
 };
 
+struct exchange_list_remote {
+	int num;
+	int end;
+	struct algorithm **algos;
+};
+
 extern int kex_status;
 
-extern struct exchange_list kex_list;
-extern struct exchange_list host_list;
-extern struct exchange_list cipher_list;
-extern struct exchange_list hash_list;
-extern struct exchange_list compress_list;
-extern struct exchange_list lang_list;
+extern struct exchange_list_local kex_list;
+extern struct exchange_list_local host_list;
+extern struct exchange_list_local cipher_list;
+extern struct exchange_list_local hash_list;
+extern struct exchange_list_local compress_list;
+extern struct exchange_list_local lang_list;
 
 void kex_init();
 void kex_guess();
+
+struct packet* kex_dh_init();
+struct packet* kex_dh_reply();
 
 #endif /* KEX_H */
 

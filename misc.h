@@ -26,10 +26,12 @@
 #ifndef MISC_H
 #define MISC_H
 
+/* Print functions */
 void macssh_print(const char *msg);
 void macssh_print_file(FILE *file, const char *msg);
 void macssh_print_array(void *data, int len);
 void macssh_print_embedded_string(void *data, int len);
+
 void macssh_debug(const char *msg);
 void macssh_err(const char *msg, int err);
 void macssh_exit(const char *msg, int err);
