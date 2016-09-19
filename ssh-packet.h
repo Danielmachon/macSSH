@@ -40,7 +40,9 @@ struct exchange_list_local;
 
 /* Single packet buffer */
 struct packet {
-	void *data; /* Actual data */
+    
+	char *data; /* Actual data */
+        
 	unsigned int len; /* Used size */
 	unsigned int wr_pos; /* Write position */
 	unsigned int rd_pos; /* Read position */
@@ -59,7 +61,10 @@ struct packet {
 	char* (*get_str)(struct packet *pck);
 	unsigned char (*get_byte)(struct packet *pck);
 	unsigned char* (*get_bytes)(struct packet *pck, int num);
+        
 	struct exchange_list_remote* (*get_exch_list)(struct packet *pck);
+        
+        struct list_head list;
 };
 
 /* Initialize/Manipulate packet */
