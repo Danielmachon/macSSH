@@ -21,6 +21,7 @@
 #include "ssh-packet.h"
 #include "kex.h"
 #include "misc.h"
+#include "dbg.h"
 
 void put_size(struct packet *pck, int data)
 {
@@ -53,19 +54,28 @@ void put_stamp(struct packet* pck)
 
 void put_byte(struct packet *pck, unsigned char data)
 {
-	((unsigned char *) pck->data)[pck->len] = data;
+	*(pck->data + pck->len) = data;
+	
 	pck->len++;
+}
+
+/* This function does NOT increment the write offset */
+void put_byte_at(struct packet *pck, unsigned char data, int index)
+{
+	*(pck->data + index) = data;
 }
 
 void put_bytes(struct packet *pck, void *data, int len)
 {
 	memcpy(pck->data + pck->len, (unsigned char*) data, len);
+	
 	pck->len += len;
 }
 
 void put_char(struct packet *pck, unsigned char data)
 {
-	((char *) pck->data)[pck->len] = data;
+	put_byte(pck, data);
+	
 	pck->len++;
 }
 
@@ -73,7 +83,14 @@ void put_int(struct packet *pck, int data)
 {
 	/* Macro from tomcrypt */
 	STORE32H(data, pck->data + pck->len);
+	
 	pck->len += 4;
+}
+
+void put_str(struct packet *pck, const char *data)
+{
+	memmove(((char*) pck->data) + pck->len, data, strlen(data));
+	pck->len += strlen(data);
 }
 
 /* If the most significant bit would be set for
@@ -94,12 +111,6 @@ void put_mpint(struct packet *pck, mp_int *mpi)
 
 	if (mp_to_unsigned_bin(mpi, (unsigned char *) pck->data) != MP_OKAY)
 		macssh_exit("error in put_mpint", errno);
-}
-
-void put_str(struct packet *pck, const char *data)
-{
-	memmove(((char*) pck->data) + pck->len, data, strlen(data));
-	pck->len += strlen(data);
 }
 
 void put_exch_list(struct packet* pck, struct exchange_list_local* data)
@@ -156,19 +167,34 @@ mp_int* get_mpint(struct packet *pck)
 
 unsigned char get_char(struct packet * pck)
 {
-
+	return get_byte(pck);
 }
 
 char* get_str(struct packet * pck)
 {
-	/* Probably not safe to assume a string is zero terminated */
+	/* We are assuming a str i zero terminated
+	 * Undefined behaviour if it is not */
+	
+	char *str;
+	int len;
+	
+	len = strlen(pck->data + pck->rd_pos);
+	
+	str = calloc(len, 1);
+	strcpy(str, (pck->data + pck->rd_pos));
+	
+	return str;
+	
 }
 
 unsigned char get_byte(struct packet * pck)
 {
 	unsigned char ret;
+	
 	ret = ((unsigned char *) pck->data)[pck->rd_pos];
+	
 	pck->rd_pos++;
+	
 	return ret;
 }
 
@@ -200,8 +226,9 @@ struct exchange_list_remote* get_exch_list(struct packet * pck)
 
 	int x;
 	for (x = pos; x <= pos + len; x++) {
-		if (((unsigned char *) pck->data)[x] == ',' || 
-		x == (len + pos)) {
+		
+		if (((unsigned char *) pck->data)[x] == ',' || 	
+			x == (len + pos)) {
 
 			if (ret->end >= ret->num) {
 				ret->algos = realloc(ret->algos,
@@ -219,6 +246,8 @@ struct exchange_list_remote* get_exch_list(struct packet * pck)
 				pck->rd_pos++;
 
 			ret->algos[ret->end]->name = name;
+
+			log_info(stderr, "%s\n", ret->algos[ret->end]->name);
 
 			ret->end++;
 

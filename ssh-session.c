@@ -22,15 +22,49 @@
 #include "ssh-packet.h"
 #include "ssh-session.h"
 #include "misc.h"
+#include "dbg.h"
 
 void client_session_loop()
 {
+	fd_set readfds;
+
+	struct buffer *buf_in = session.buf_in;
+	struct buffer *buf_out = session.buf_out;
+
 	for (;;) {
 
-	}
+		struct packet *pck_in;
+		struct packet *pck_out;
 
-loop_out:
-	;
+		FD_ZERO(&readfds);
+
+		FD_SET(STDIN, &readfds);
+
+		/* Check for activity on sockets */
+		tv.tv_sec = SELECT_TIMEOUT;
+		tv.tv_usec = SELECT_TIMEOUT;
+
+		int num;
+		if ((num = select(FD_SETSIZE,
+			&readfds, NULL, NULL, &tv)) == 0)
+			goto out;
+
+		if (FD_ISSET(STDIN, &readfds)) {
+			continue;
+		}
+
+		pck_in = packet_new(1500);
+
+		read(STDIN, pck_in->data, 1500);
+
+		packet_encrypt(pck_in);
+
+		buf_out->buf_add(buf_out, pck_in);
+
+		session.write_packet(pck_in);
+out:
+		;
+	}
 }
 
 void server_session_loop()
@@ -167,7 +201,7 @@ void read_identification_string()
 		session.packet_part = pck;
 	}
 
-	fprintf(stderr, "Found identification string: %s\n",
+	log_info("Found identification string: %s\n",
 		session.remote_id);
 }
 

@@ -18,58 +18,43 @@
  */
 
 #include "buffer.h"
+#include "list.h"
 
 void buf_add(struct buffer *buf, struct packet *data)
 {
-	struct buf_node *node = malloc(sizeof(struct buf_node));
-
-	node->data = data;
-	node->next = NULL;
-
-	if (buf->tail == NULL) {
-		buf->head = buf->tail = node;
-	}
-	else {
-		buf->tail->next = node;
-		buf->head = node;
-	}
+	list_add(&buf->packets, &data->list);
 }
 
 struct packet* buf_get(struct buffer *buf)
 {
-	if(buf->head != NULL)
-		return buf->head->data;
-	else 
-		return NULL;
+	struct packet *pck;
+	
+	pck = buf->packets->list.next;
+	
+	list_del(&pck->list);
+	
+	return pck;
 }
 
-struct packet* buf_remove(struct buffer *buf)
+struct packet* buf_peak(struct buffer *buf)
 {
-	struct buf_node *node;
-	struct packet *data;
-
-	if ((node = buf->head) == NULL)
-		return NULL;
-
-	data = node->data;
-	if ((buf->head = node->next) == NULL)
-		buf->tail = NULL;
-
-	free(node);
-
-	return data;
+	struct packet *pck;
+	
+	pck = buf->packets->list.next;
+	
+	return pck;
 }
 
 int buf_isempty(struct buffer *buf)
 {
-	return(buf->head == NULL) ? 0 : 1;
+	return(list_empty(&buf->packets->list));
 }
 
 int buf_len(struct buffer *buf)
 {
 	int count = 0;
-	struct buf_node *node;
-	for (node = buf->head; node; node = node->next)
+	
+	while(!list_empty(&buf->packets->list))
 		count++;
 
 	return count;
@@ -77,21 +62,26 @@ int buf_len(struct buffer *buf)
 
 void buf_free(struct buffer *buf)
 {
-	struct buf_node *node;
-	for (node = buf->head; node; node = node->next) {
-		free(node->data);
-		free(node);
+	struct packet *pck;
+	struct list_head *pos;
+	struct list_head *safe;
+	
+	list_for_each_safe(pos, safe, &buf->packets->list) {
+		pck = list_entry(pos, struct list_head, list);	
+		list_del(pos);
+		free(pck);
 	}
+	
 	free(buf);
 }
 
 static void buf_init(struct buffer *buf)
 {
-	buf->head = NULL;
-	buf->tail = NULL;
+	INIT_LIST_HEAD(buf->packets->list);
 
 	buf->buf_add = &buf_add;
-	buf->buf_remove = &buf_remove;
+	buf->buf_get = &buf_get;
+	buf->buf_peak = &buf_peak;
 	buf->buf_isempty = &buf_isempty;
 	buf->buf_len = &buf_len;
 }
@@ -99,6 +89,7 @@ static void buf_init(struct buffer *buf)
 struct buffer* buf_new(void)
 {
 	struct buffer *buf = malloc(sizeof(struct buffer));
+	
 	buf_init(buf);
 
 	return buf;
