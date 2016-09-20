@@ -1,14 +1,14 @@
-*   	FIFO buffer on queued packets to write
-    	Must maintain position of written bytes, incase not all,
-    	bytes are written on first attempt. Dont free packet if,
-    	all data has not been written yet.
+*	FIFO buffer on queued packets to write
+	Must maintain position of written bytes, incase not all,
+	bytes are written on first attempt. Dont free packet if,
+	all data has not been written yet.
 
-*   	Or performance, FIFO is probably best implemented as a linked,
-    	list queue.
+*	Or performance, FIFO is probably best implemented as a linked,
+	list queue.
 
 *	Still not totally sure how the channel IO works
 
-*   	Maybe implement a generic ssh packet struct instead,
+*	Maybe implement a generic ssh packet struct instead,
 	of a low level generic buffer as Dropbear does it.
 
 March 25th, 2016:
@@ -31,3 +31,6 @@ March 26th, 2016
         Only after SSH_MSG_NEWKEYS is sent will the new values be taken in use.
 
 
+June 30th, 2016
+
+*	Minor tweak stuff

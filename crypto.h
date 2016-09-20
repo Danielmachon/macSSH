@@ -31,12 +31,12 @@
 
 struct keys {
 	
-	struct algorithm kex;
-	struct algorithm host;
-	struct algorithm ciper;
-	struct algorithm hash;
-	struct algorithm compress;
-	struct algorithm lang;
+	struct algorithm *kex;
+	struct algorithm *host;
+	struct algorithm *ciper;
+	struct algorithm *hash;
+	struct algorithm *compress;
+	struct algorithm *lang;
 	
 };
 

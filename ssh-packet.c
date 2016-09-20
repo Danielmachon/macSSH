@@ -220,8 +220,6 @@ struct exchange_list_remote* get_exch_list(struct packet * pck)
 
 			ret->algos[ret->end]->name = name;
 
-			fprintf(stderr, "%s\n", ret->algos[ret->end]->name);
-
 			ret->end++;
 
 		}
@@ -242,6 +240,7 @@ void packet_init(struct packet * pck)
 	pck->put_str = &put_str;
 	pck->put_bytes = &put_bytes;
 	pck->put_exch_list = &put_exch_list;
+	pck->put_mpint = &put_mpint;
 
 	/* Gets */
 	pck->get_int = &get_int;

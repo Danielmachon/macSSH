@@ -1,6 +1,6 @@
 /*
     This file is part of SSH
-    
+
     Copyright 2016 Daniel Machon
 
     SSH program is free software: you can redistribute it and/or modify
@@ -16,7 +16,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-/* 
+/*
  * File:   ssh-main.c
  * Author: dmachon
  *
@@ -106,7 +106,7 @@ int ssh_parse_argv(int argc, char **argv)
 /*
  * Client main
  */
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
 	if (!ssh_parse_argv(argc, argv))
 		return EXIT_SUCCESS;
@@ -119,9 +119,8 @@ int main(int argc, char** argv)
 	else
 		perror("connect()");
 
-	if (session.state >= IDENTIFIED) {
+	if (session.state >= IDENTIFIED)
 		kex_init();
-	}
 
 	if (session.state == KEXED)
 		client_session_loop();

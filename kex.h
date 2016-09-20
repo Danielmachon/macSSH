@@ -41,7 +41,7 @@ struct diffie_hellman {
 
 struct algorithm {
 	char *name;
-	void *algorithm;
+	const void *algorithm;
 };
 
 struct exchange_list_local {

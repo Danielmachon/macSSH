@@ -26,6 +26,8 @@
 #ifndef MISC_H
 #define MISC_H
 
+
+
 /* Print functions */
 void macssh_print(const char *msg);
 void macssh_print_file(FILE *file, const char *msg);

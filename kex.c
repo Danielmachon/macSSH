@@ -20,6 +20,7 @@
 #include "kex.h"
 #include "includes.h"
 #include "misc.h"
+#include "random.h"
 #include "ssh-packet.h"
 #include "ssh-numbers.h"
 #include "ssh-session.h"
@@ -29,7 +30,7 @@ const int DH_G_VAL = 2;
 
 /* Forward declarations */
 static void kex_negotiate(struct packet *pck);
-static char* kex_try_match(struct exchange_list_remote* rem, 
+static struct algorithm* kex_try_match(struct exchange_list_remote* rem,
 	struct exchange_list_local* loc);
 struct diffie_hellman* kex_dh_compute();
 struct packet* kex_dh_init();
@@ -69,18 +70,18 @@ struct exchange_list_local cipher_list = {
 
 	.algos =
 	{
-		{"aes128-ctr", NULL},
+		{"aes128-ctr", &aes_desc},
 		{"aes256-ctr", NULL},
-		{"twofish256-ctr", NULL},
+		{"twofish256-ctr", &twofish_desc},
 		{"twofish128-ctr", NULL},
 		{"aes128-cbc", NULL},
 		{"aes256-cbc", NULL},
 		{"twofish256-cbc", NULL},
 		{"twofish-cbc", NULL},
 		{"twofish128-cbc", NULL},
-		{"3des-ctr", NULL},
+		{"3des-ctr", &des3_desc},
 		{"3des-cbc", NULL},
-		{"blowfish-cbc", NULL},
+		{"blowfish-cbc", &blowfish_desc},
 		{"none", NULL},
 	},
 
@@ -147,6 +148,7 @@ void kex_init()
 	boolean      first_kex_packet_follows
 	uint32       0 (reserved for future extension) */
 
+	struct packet *kex_dh_pck;
 	struct packet *pck = packet_new(1024);
 	pck->len = 5; //Make room for size and pad size
 	char cookie[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
@@ -176,35 +178,39 @@ void kex_init()
 	//ssh_print_array(pck->data, pck->len);
 	//ssh_print_embedded_string(pck->data, pck->len);
 
-	if (session.write_packet(pck) == pck->len)
+	if(session.write_packet(pck) == pck->len)
 		fprintf(stderr, "All bytes were transmitted\n");
 
 	struct packet *kex_resp;
-	
-	if(session.state == HAVE_KEX_INIT) {
+
+	if(session.state == HAVE_KEX_INIT)
 		kex_resp = session.packet_part;
-	}
-	else {
+	else
 		kex_resp = session.read_packet();
-	}
-	
+
+
 	kex_resp->rd_pos += 5;
 
-	if (kex_resp->get_byte(kex_resp) == SSH_MSG_KEXINIT)
+	if(kex_resp->get_byte(kex_resp) == SSH_MSG_KEXINIT)
 		kex_negotiate(kex_resp);
 	else
 		macssh_err("Expected remote KEX_INIT. Found something else", -1);
 
-	if (kex_status & KEX_FAIL)
+	if(kex_status & KEX_FAIL)
 		macssh_err("KEX failed", -1);
 	
+	if(session.state == HAVE_KEX_INIT)
+		session.packet_part = NULL;
+	
+	free(kex_resp);
+
 	/* Send our part of the diffie-hellman kex */
-	session.write_packet(kex_dh_init());
+	kex_dh_pck = kex_dh_init();
+	session.write_packet(kex_dh_pck);
 
 	struct packet *kex_resp_2;
 	kex_resp_2 = session.read_packet();
-
-	//ssh_print_embedded_string(kex_resp_2->data, kex_resp_2->len);
+	macssh_print_array(kex_resp_2->data, kex_resp_2->len);
 }
 
 /* Initialize the diffie-hellman part of the key-exchange.
@@ -213,32 +219,32 @@ void kex_init()
 struct packet* kex_dh_init()
 {
 	struct packet *pck = packet_new(1024);
-	
+
 	pck->len = 5; //Make room for size and pad size
 	char cookie[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
 	char pads[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 	pck->put_byte(pck, SSH_MSG_KEXDH_INIT);
 	pck->put_bytes(pck, cookie, 16);
-	
+
 	struct diffie_hellman *dh;
 	dh = kex_dh_compute();
-	
+
 	pck->put_mpint(pck, &dh->pub_key);
-	
+
 	//pck->put_byte(pck, 1); //No guess
 	//pck->put_int(pck, 0); //Reserved
 
 	/* Stamp with metadata */
-	put_stamp(pck);	
-	
+	put_stamp(pck);
+
 	return pck;
 }
 
 /* Server response to a client kex_dh_init */
 struct packet* kex_dh_reply()
 {
-	
+
 }
 
 /* Negotiate algorithms by mathing remote and local versions */
@@ -247,36 +253,34 @@ static void kex_negotiate(struct packet *pck)
 	/* Skip the 16 byte cookie */
 	pck->rd_pos += 16;
 
-	session.crypto->keys.kex.name =
+	session.crypto->keys.kex =
 		kex_try_match(pck->get_exch_list(pck), &kex_list);
 
-	session.crypto->keys.host.name =
+	session.crypto->keys.host =
 		kex_try_match(pck->get_exch_list(pck), &host_list);
 
-	session.crypto->keys.ciper.name =
+	session.crypto->keys.ciper =
 		kex_try_match(pck->get_exch_list(pck), &cipher_list);
 
-	session.crypto->keys.hash.name =
+	session.crypto->keys.hash =
 		kex_try_match(pck->get_exch_list(pck), &hash_list);
 
-	session.crypto->keys.compress.name =
+	session.crypto->keys.compress =
 		kex_try_match(pck->get_exch_list(pck), &compress_list);
 
-	session.crypto->keys.lang.name =
+	session.crypto->keys.lang =
 		kex_try_match(pck->get_exch_list(pck), &lang_list);
-	
-	session.dh = kex_dh_compute();
 }
 
 /* Try to match remote and local version of single algorithm */
-static char* kex_try_match(struct exchange_list_remote *rem, 
+static struct algorithm* kex_try_match(struct exchange_list_remote *rem,
 	struct exchange_list_local *loc)
 {
 	int x, y;
-	for (x = 0; x < rem->end; x++) {
-		for (y = 0; y < loc->num; y++) {
-			if (strcmp(rem->algos[x]->name, loc->algos[y].name) == 0)
-				return rem->algos[x]->name;
+	for(x = 0; x < loc->num; x++) {
+		for(y = 0; y < rem->end; y++) {
+			if(strcmp(loc->algos[x].name, rem->algos[y]->name) == 0)
+				return &loc->algos[x];
 		}
 	}
 
@@ -294,9 +298,9 @@ struct diffie_hellman* kex_dh_compute()
 {
 	struct diffie_hellman *dh_vals = NULL;
 
-	mp_int dh_p = {0, 0, 0, 0};
-	mp_int dh_q = {0, 0, 0, 0};
-	mp_int dh_g = {0, 0, 0, 0};
+	mp_int dh_p = {0, 0, 0, NULL};
+	mp_int dh_q = {0, 0, 0, NULL};
+	mp_int dh_g = {0, 0, 0, NULL};
 
 	/* Initialize dh struct and mp_int's */
 	dh_vals = malloc(sizeof(struct diffie_hellman));
@@ -304,19 +308,21 @@ struct diffie_hellman* kex_dh_compute()
 
 	/* read the prime and generator*/
 	/* Where should I read the prime from ? */
-	unsigned char zeros[3] = {0, 0, 0};
-	mp_read_unsigned_bin(&dh_p, zeros, 3);
+	unsigned char dh_p_bytes[26] = {255, 255, 255, 255, 255, 255, 255, 255, 255,
+		255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255};
+	unsigned int dh_p_len = 26;
+	mp_read_unsigned_bin(&dh_p, dh_p_bytes, dh_p_len);
 
 	/* Set the dh g value */
-	if (mp_set_int(&dh_g, DH_G_VAL) != MP_OKAY)
+	if(mp_set_int(&dh_g, DH_G_VAL) != MP_OKAY)
 		macssh_err("Diffie-Hellman error", errno);
 
 	/* calculate q = (p-1)/2 */
 	/* dh_priv is just a temp var here */
-	if (mp_sub_d(&dh_p, 1, &dh_vals->priv_key) != MP_OKAY)
+	if(mp_sub_d(&dh_p, 1, &dh_vals->priv_key) != MP_OKAY)
 		macssh_err("Diffie-Hellman error", errno);
 
-	if (mp_div_2(&dh_vals->priv_key, &dh_q) != MP_OKAY)
+	if(mp_div_2(&dh_vals->priv_key, &dh_q) != MP_OKAY)
 		macssh_err("Diffie-Hellman error", errno);
 
 	/* Generate a private portion 0 < dh_priv < dh_q */
@@ -324,7 +330,7 @@ struct diffie_hellman* kex_dh_compute()
 
 	/* f = g^y mod p 
 	 * public key portion */
-	if (mp_exptmod(&dh_g, &dh_vals->priv_key, &dh_p, &dh_vals->pub_key) != MP_OKAY)
+	if(mp_exptmod(&dh_g, &dh_vals->priv_key, &dh_p, &dh_vals->pub_key) != MP_OKAY)
 		macssh_err("Diffie-Hellman error", errno);
 
 	mp_clear_multi(&dh_g, &dh_p, &dh_q, NULL);
