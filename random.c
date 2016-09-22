@@ -302,3 +302,14 @@ void gen_random_mpint(mp_int *max, mp_int *rand)
 
 	free(randbuf);
 }
+
+void* get_random_bytes(int size)
+{
+        void *data = malloc(size);
+        
+        int fd = open("/dev/urandom", O_RDONLY);
+        
+        read(fd, data, size);
+        
+        return data;
+}

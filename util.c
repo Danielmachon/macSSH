@@ -21,13 +21,15 @@
 #include "util.h"
 #include "ssh-session.h"
 
+#define h_addr h_addr_list[0]
+
 int init_tcp_socket(char* ip, int port, int t_out);
 int init_tcp_listen_socket(int port); 
 
 int connect_to_remote_host()
 {
 	int sock;
-	sock = init_tcp_socket("localhost", 22, 10);
+	sock = init_tcp_socket("194.255.39.141", 6666, 0);
 
 	if(sock < 0)
 		return -1;
@@ -97,6 +99,8 @@ int init_tcp_listen_socket(int port)
 
 	if (bind(sock, (struct sockaddr*) &si_me, sizeof(si_me)) == -1)
 		return -1;
+        
+        listen(sock, 5);
 
 
 	return sock;

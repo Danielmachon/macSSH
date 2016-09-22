@@ -66,13 +66,15 @@ struct session {
 	
 	struct diffie_hellman *dh;
 
-	struct channel **channels;
+	struct channel *channels;
 
 	/* Partial read packet. Might be incomplete
 	 * after a read. Is put in ingoing buffer if
 	 * complete. */
 	struct packet *packet_part;
 	int packet_flag;
+        
+        struct packet payload;
 
 	struct buffer *buf_in;
 	struct buffer *buf_out;

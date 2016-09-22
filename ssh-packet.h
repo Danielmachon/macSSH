@@ -29,6 +29,8 @@
 /* For mpint */
 #include "tommath.h"
 
+#include "list.h"
+
 #define PACKET_MAX_SIZE  35000
 
 /* All implementations MUST be able to process packets with an
@@ -97,6 +99,7 @@ unsigned char get_char(struct packet *pck);
 char* get_str(struct packet *pck);
 unsigned char get_byte(struct packet *pck);
 unsigned char* get_bytes(struct packet *pck, int num);
+mp_int* get_mpint(struct packet *pck);
 struct exchange_list_remote* get_exch_list(struct packet *pck);
 
 

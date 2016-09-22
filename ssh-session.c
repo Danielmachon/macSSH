@@ -26,116 +26,171 @@
 
 void client_session_loop()
 {
-	fd_set readfds;
+        fd_set readfds;
 
-	struct buffer *buf_in = session.buf_in;
-	struct buffer *buf_out = session.buf_out;
+        struct buffer *buf_in = session.buf_in;
+        struct buffer *buf_out = session.buf_out;
 
-	for (;;) {
+        if (connect_to_remote_host() > -1)
+                identify();
+        else
+                log_err("connect");
 
-		struct packet *pck_in;
-		struct packet *pck_out;
+        if (session.state >= IDENTIFIED)
+                kex_init();
 
-		FD_ZERO(&readfds);
+        if (session.state != KEXED)
+                exit(EXIT_FAILURE);
 
-		FD_SET(STDIN, &readfds);
+        for (;;) {
 
-		/* Check for activity on sockets */
-		tv.tv_sec = SELECT_TIMEOUT;
-		tv.tv_usec = SELECT_TIMEOUT;
+                struct packet *pck_in;
+                struct packet *pck_out;
 
-		int num;
-		if ((num = select(FD_SETSIZE,
-			&readfds, NULL, NULL, &tv)) == 0)
-			goto out;
+                FD_ZERO(&readfds);
 
-		if (FD_ISSET(STDIN, &readfds)) {
-			continue;
-		}
+                /* Check for activity on sockets */
+                struct timeval tv;
+                tv.tv_sec = 5;
+                tv.tv_usec = 5;
 
-		pck_in = packet_new(1500);
+                int num;
+                if ((num = select(FD_SETSIZE,
+                        &readfds, NULL, NULL, &tv)) == 0)
+                        goto out;
 
-		read(STDIN, pck_in->data, 1500);
+                pck_in = packet_new(1500);
 
-		packet_encrypt(pck_in);
+                packet_encrypt(pck_in);
 
-		buf_out->buf_add(buf_out, pck_in);
+                buf_out->buf_add(buf_out, pck_in);
 
-		session.write_packet(pck_in);
-out:
-		;
-	}
+                session.write_packet(pck_in);
+        out:
+                ;
+        }
 }
 
 void server_session_loop()
 {
+        fd_set readfds;
+        int sock;
+        int client;
+        struct sockaddr_in addr;
+        int addr_len = sizeof(struct sockaddr_in);
+        
+        sock = init_tcp_listen_socket(6677);
+
+        struct packet *pck;
+
+        for (;;) {
+
+                struct packet *pck_in;
+                struct packet *pck_out;
+
+                FD_ZERO(&readfds);
+                
+                FD_SET(sock, &readfds);
+
+                /* Check for activity on sockets */
+                struct timeval tv;
+                tv.tv_sec = 5;
+                tv.tv_usec = 5;
+
+                int num;
+                if ((num = select(FD_SETSIZE,
+                        &readfds, NULL, NULL, &tv)) < 1)
+                        goto out;
+                
+                if(FD_ISSET(sock, &readfds)) {
+                        session.sock_out = accept(sock, (struct sockaddr *) &addr, 
+                                &addr_len);
+                        session.sock_in = session.sock_out;
+                        identify();
+                        kex_init();
+                }
+
+                pck_in = packet_new(1500);
+
+                session.write_packet(pck_in);
+        out:
+                ;
+        }
 
 }
 
 int write_packet(struct packet *pck)
 {
-	int len = 0;
+        int len = 0;
 
-	len = send(session.sock_out, pck->data + pck->wr_pos,
-		pck->len - pck->wr_pos, 0);
+        len = send(session.sock_out, pck->data + pck->wr_pos,
+                pck->len - pck->wr_pos, 0);
 
-	return len;
+        return len;
 }
 
-/* Read the first 16 bytes, or cipher block-size, whichever is larger,
+/* Read the first 8 bytes, or cipher block-size, whichever is larger,
  * of a pending packet */
 static int try_read_packet(struct packet *pck)
 {
-	int len = 0;
+        pck->len += read(session.sock_in, pck->data + pck->len, 8);
 
-	len = read(session.sock_in, pck->data, 16);
+        log_info("%u", pck->len);
 
-	if (len == 16)
-		return len;
-	else
-		return -1;
+        if (pck->len == 8)
+                log_info("Successfully read first 8 bytes");
+        else if (pck->len == 0)
+                log_warn("Connection closed by remote host");
+        else
+                log_err("try_read_packet");
 }
 
 /* Read packet. If the whole packet cant be read,
  * the read content is placed in a temporary packet. */
 struct packet* read_packet(void)
 {
-	int rd_len = 0;
-	struct packet *pck;
+        struct packet *pck;
 
-	(session.packet_part == NULL) ?
-		(pck = packet_new(1514)) : (pck = session.packet_part);
+        (session.packet_part == NULL) ?
+                (pck = packet_new(1514)) : (pck = session.packet_part);
 
-	rd_len = try_read_packet(pck);
+        try_read_packet(pck);
 
-	if (rd_len < 16) {
-		(session.packet_part == NULL) ? (session.packet_part = pck) :
-			macssh_exit("Could not read packet in 2 tries", -1);
-		return NULL;
-	}
+        if (pck->len < 8) {
+                (session.packet_part == NULL) ? (session.packet_part = pck) :
+                        macssh_exit("Could not read packet in 2 tries", -1);
+                return NULL;
+        }
 
-	/* We have enough info to determine the length of the packet */
-	int pck_len;
-	pck_len = pck->get_int(pck);
+        macssh_print_array(pck->data, pck->len);
 
-	rd_len = read(session.sock_out, pck->data + pck->len, (pck_len - 16));
+        /* We have enough info to determine the length of the packet */
+        int pck_len, pck_pad, pck_pay_len;
+        pck_len = pck->get_int(pck);
+        pck_pad = pck->get_byte(pck);
+        pck_pay_len = (pck_len - pck_pad - 1);
+        pck_len += 4; // -uint32 and mac length
 
-	if (rd_len != (pck_len - 16)) {
-		session.packet_part = pck;
-		return NULL;
-	}
+        pck->len += read(session.sock_out, pck->data + pck->len, (pck_len - 8));
 
-	/* We have the whole packet. Place it in ingoing buffer*/
-	session.buf_in->buf_add(session.buf_in, pck);
+        if (pck->len != pck_len) {
+                session.packet_part = pck;
+                return NULL;
+        }
 
-	return pck;
+        /* We have the whole packet. Place it in ingoing buffer*/
+        session.buf_in->buf_add(session.buf_in, pck);
+
+        macssh_print_embedded_string(pck->data, pck->len);
+
+        return pck;
 }
 
 void process_packet()
 {
-	struct packet *pck;
+        struct packet *pck;
 
-	pck = session.buf_in->buf_get(session.buf_in);
+        pck = session.buf_in->buf_get(session.buf_in);
 }
 
 /* Identify with remote host. 
@@ -143,94 +198,101 @@ void process_packet()
  * descriptor. */
 void identify()
 {
-	struct packet *loc_id_pck = packet_new(64);
+        struct packet *loc_id_pck = packet_new(64);
 
-	loc_id_pck->put_str(loc_id_pck, IDENTIFICATION_STRING);
+        loc_id_pck->put_str(loc_id_pck, IDENTIFICATION_STRING);
 
-	loc_id_pck->wr_pos = session.write_packet(loc_id_pck);
+        loc_id_pck->wr_pos = session.write_packet(loc_id_pck);
 
-	/* Check if entire packet has been transmitted */
-	if (loc_id_pck->wr_pos != loc_id_pck->len) {
-		/* Enqueue the packet for retransmission */
-		session.buf_out->buf_add(session.buf_out, loc_id_pck);
+        /* Check if entire packet has been transmitted */
+        if (loc_id_pck->wr_pos != loc_id_pck->len) {
+                /* Enqueue the packet for retransmission */
+                session.buf_out->buf_add(session.buf_out, loc_id_pck);
 
-		fprintf(stderr, "%u out of %u was transmitted\n",
-			loc_id_pck->wr_pos, loc_id_pck->len);
-	}
+                fprintf(stderr, "%u out of %u was transmitted\n",
+                        loc_id_pck->wr_pos, loc_id_pck->len);
+        }
 
 
-	read_identification_string();
+        read_identification_string();
 
-	if (errno == EWOULDBLOCK || errno == EAGAIN)
-		macssh_exit("failed in identify()", errno);
+        if (errno == EWOULDBLOCK || errno == EAGAIN)
+                macssh_exit("failed in identify()", errno);
 
-	free(loc_id_pck);
+        free(loc_id_pck);
 }
 
 void read_identification_string()
 {
-	struct packet *pck;
-	pck = packet_new(1514);
-	int len = 0;
+        struct packet *pck;
+        pck = packet_new(2048);
+        int len = 0;
 
-	pck->len = read(session.sock_in, pck->data, 1514);
+        pck->len = read(session.sock_in, pck->data, 2048);
+        
+        macssh_print_array(pck->data, pck->len);
+        macssh_print_embedded_string(pck->data, pck->len);
 
-	/* Some implementations will send the KEXINIT immediately after
-	 * the identification string. Check for that and increment the read,
-	 * position accordingly. */
-	int x;
-	for (x = 0; x < pck->len; x++) {
-		if (((unsigned char *) pck->data)[x] == '\r' &&
-			((unsigned char *) pck->data)[x + 1] == '\n') {
-			strncpy(session.remote_id,
-				(unsigned char *) pck->data, x);
-			pck->rd_pos += (x + 2);
-			break;
-		}
+        /* Some implementations will send the KEXINIT immediately after
+         * the identification string. Check for that and increment the read,
+         * position accordingly. The ID string is carriage-return line-feed,
+         * ended */
+        int x;
+        for (x = 0; x < pck->len; x++) {
+                if ((*(pck->data + x) == '\r') &&
+                        (*(pck->data + x + 1) == '\n')) {
+                        strncpy(session.remote_id, pck->data, x);
+                        pck->rd_pos += (x + 2);
+                        break;
+                }
 
-	}
+        }
 
-	if (x + 2 == pck->len) {
-		free(pck);
-		session.state = IDENTIFIED;
-	} else {
-		macssh_debug("Seems like serverside has sent id string,"
-			" and kexinit immediately after each other\n");
+        if (x + 2 == pck->len) {
+                free(pck);
+                session.state = IDENTIFIED;
+        } else {
+                log_info("Seems like serverside has sent id string,"
+                        " and kexinit immediately after each other");
 
-		session.state = HAVE_KEX_INIT;
-		session.packet_part = pck;
-	}
+                session.state = HAVE_KEX_INIT;
+                session.packet_part = pck;
+        }
 
-	log_info("Found identification string: %s\n",
-		session.remote_id);
+        log_info("Found identification string: %s\n",
+                session.remote_id);
 }
 
 void session_init(struct session *ses)
 {
-	ses->session_id = 1;
+        ses->session_id = 1;
 
-	ses->rx = 0;
-	ses->tx = 0;
+        ses->rx = 0;
+        ses->tx = 0;
 
-	ses->buf_in = buf_new();
-	ses->buf_out = buf_new();
+        ses->buf_in = buf_new();
+        ses->buf_out = buf_new();
 
-	ses->packet_part = packet_new(PACKET_MAX_SIZE);
+        ses->packet_part = NULL;
 
-	ses->crypto = malloc(sizeof(struct crypto));
-	memset(ses->crypto, 0, sizeof(struct crypto));
+        ses->crypto = malloc(sizeof (struct crypto));
+        memset(ses->crypto, 0, sizeof (struct crypto));
 
-	ses->read_packet = &read_packet;
-	ses->write_packet = &write_packet;
+        ses->read_packet = &read_packet;
+        ses->write_packet = &write_packet;
+
+        ses->channels = malloc(sizeof (struct channel));
+
+        INIT_LIST_HEAD(&ses->channels->list);
 }
 
 void session_free()
 {
-	buf_free(session.buf_in);
-	buf_free(session.buf_out);
+        buf_free(session.buf_in);
+        buf_free(session.buf_out);
 
-	packet_free(session.packet_part);
+        packet_free(session.packet_part);
 
-	close(session.sock_in);
-	close(session.sock_out);
+        close(session.sock_in);
+        close(session.sock_out);
 }

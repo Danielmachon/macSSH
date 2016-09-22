@@ -21,6 +21,7 @@
 #define SSH_CHANNEL_H
 
 #include "buffer.h"
+#include "list.h"
 
 /* Channel data encapsulation */
 struct channel {
@@ -32,6 +33,8 @@ struct channel {
 	
 	struct buffer ch_buf_in;
 	struct buffer ch_buf_out;
+        
+        struct list_head list;
 	
 };
 
