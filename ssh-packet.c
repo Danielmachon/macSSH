@@ -317,7 +317,9 @@ void packet_init(struct packet * pck)
         pck->get_int = &get_int;
         pck->get_byte = &get_byte;
         pck->get_bytes = &get_bytes;
+        pck->get_str = &get_str;
         pck->get_exch_list = &get_exch_list;
+        pck->get_mpint = &get_mpint;
 }
 
 struct packet * packet_new(unsigned int size)

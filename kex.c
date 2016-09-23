@@ -210,9 +210,11 @@ void kex_init()
 
         struct packet *dh_pck = packet_new(1024);
 
-        log_info("Reading KEX_DH_INIT packet");
+        log_info("Reading KEX_DH_REPLY packet");
+        
+        kex_dh_reply();
 
-        session.read_packet(dh_pck);
+
 }
 
 /* Initialize the diffie-hellman part of the key-exchange.
@@ -236,7 +238,7 @@ struct packet* kex_dh_init()
 
         macssh_print_array(pck->data, pck->len);
 
-        pck->put_mpint(pck, &dh->pub_key);      
+        pck->put_mpint(pck, &dh->pub_key);
 
         log_info("After put_mpint");
 
@@ -254,7 +256,26 @@ struct packet* kex_dh_init()
 /* Server response to a client kex_dh_init */
 struct packet* kex_dh_reply()
 {
+        struct packet *dh_pck;
+        
+        dh_pck = session.read_packet();
 
+        macssh_print_array(dh_pck->data, dh_pck->len);
+        macssh_print_embedded_string(dh_pck->data, dh_pck->len);
+
+        dh_pck->rd_pos += 1; //Skip type
+        int key_len = dh_pck->get_int(dh_pck);
+        int id_len = dh_pck->get_int(dh_pck);
+        
+        char *k_s = dh_pck->get_bytes(dh_pck, key_len - 4);
+        char *k_s_id = strncpy(k_s_id, k_s, id_len);
+        
+        macssh_print_embedded_string(k_s, key_len);
+        
+        mp_int *dh_f;
+        
+        dh_f = dh_pck->get_mpint(dh_pck);
+        
 }
 
 /* Negotiate algorithms by mathing remote and local versions */
@@ -308,9 +329,9 @@ struct diffie_hellman* kex_dh_compute()
 {
         struct diffie_hellman *dh_vals = NULL;
 
-	DEF_MP_INT(dh_p);
-	DEF_MP_INT(dh_q);
-	DEF_MP_INT(dh_g);
+        DEF_MP_INT(dh_p);
+        DEF_MP_INT(dh_q);
+        DEF_MP_INT(dh_g);
 
         /* Initialize dh struct and mp_int's */
         dh_vals = malloc(sizeof (struct diffie_hellman));

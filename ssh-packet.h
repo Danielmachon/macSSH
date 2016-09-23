@@ -63,6 +63,7 @@ struct packet {
 	char* (*get_str)(struct packet *pck);
 	unsigned char (*get_byte)(struct packet *pck);
 	unsigned char* (*get_bytes)(struct packet *pck, int num);
+        mp_int* (*get_mpint)(struct packet *pck);
         
 	struct exchange_list_remote* (*get_exch_list)(struct packet *pck);
         
