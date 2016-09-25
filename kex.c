@@ -25,9 +25,9 @@
 #include "ssh-numbers.h"
 #include "ssh-session.h"
 #include "dbg.h"
+#include "keys.h"
 
 int kex_status = 0;
-const int DH_G_VAL = 2;
 
 /* Used to force mp_ints to be initialised */
 #define DEF_MP_INT(X) mp_int X = {0, 0, 0, NULL}
@@ -39,6 +39,35 @@ static struct algorithm* kex_try_match(struct exchange_list_remote* rem,
 struct diffie_hellman* kex_dh_compute();
 struct packet* kex_dh_init();
 struct packet* kex_dh_reply();
+
+/* Common generator for diffie-hellman-group14 */
+const int DH_G_VAL = 2;
+
+/* diffie-hellman-group14-sha1 value for p */
+const unsigned char dh_p_14[256] = {
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xC9, 0x0F, 0xDA, 0xA2,
+        0x21, 0x68, 0xC2, 0x34, 0xC4, 0xC6, 0x62, 0x8B, 0x80, 0xDC, 0x1C, 0xD1,
+        0x29, 0x02, 0x4E, 0x08, 0x8A, 0x67, 0xCC, 0x74, 0x02, 0x0B, 0xBE, 0xA6,
+        0x3B, 0x13, 0x9B, 0x22, 0x51, 0x4A, 0x08, 0x79, 0x8E, 0x34, 0x04, 0xDD,
+        0xEF, 0x95, 0x19, 0xB3, 0xCD, 0x3A, 0x43, 0x1B, 0x30, 0x2B, 0x0A, 0x6D,
+        0xF2, 0x5F, 0x14, 0x37, 0x4F, 0xE1, 0x35, 0x6D, 0x6D, 0x51, 0xC2, 0x45,
+        0xE4, 0x85, 0xB5, 0x76, 0x62, 0x5E, 0x7E, 0xC6, 0xF4, 0x4C, 0x42, 0xE9,
+        0xA6, 0x37, 0xED, 0x6B, 0x0B, 0xFF, 0x5C, 0xB6, 0xF4, 0x06, 0xB7, 0xED,
+        0xEE, 0x38, 0x6B, 0xFB, 0x5A, 0x89, 0x9F, 0xA5, 0xAE, 0x9F, 0x24, 0x11,
+        0x7C, 0x4B, 0x1F, 0xE6, 0x49, 0x28, 0x66, 0x51, 0xEC, 0xE4, 0x5B, 0x3D,
+        0xC2, 0x00, 0x7C, 0xB8, 0xA1, 0x63, 0xBF, 0x05, 0x98, 0xDA, 0x48, 0x36,
+        0x1C, 0x55, 0xD3, 0x9A, 0x69, 0x16, 0x3F, 0xA8, 0xFD, 0x24, 0xCF, 0x5F,
+        0x83, 0x65, 0x5D, 0x23, 0xDC, 0xA3, 0xAD, 0x96, 0x1C, 0x62, 0xF3, 0x56,
+        0x20, 0x85, 0x52, 0xBB, 0x9E, 0xD5, 0x29, 0x07, 0x70, 0x96, 0x96, 0x6D,
+        0x67, 0x0C, 0x35, 0x4E, 0x4A, 0xBC, 0x98, 0x04, 0xF1, 0x74, 0x6C, 0x08,
+        0xCA, 0x18, 0x21, 0x7C, 0x32, 0x90, 0x5E, 0x46, 0x2E, 0x36, 0xCE, 0x3B,
+        0xE3, 0x9E, 0x77, 0x2C, 0x18, 0x0E, 0x86, 0x03, 0x9B, 0x27, 0x83, 0xA2,
+        0xEC, 0x07, 0xA2, 0x8F, 0xB5, 0xC5, 0x5D, 0xF0, 0x6F, 0x4C, 0x52, 0xC9,
+        0xDE, 0x2B, 0xCB, 0xF6, 0x95, 0x58, 0x17, 0x18, 0x39, 0x95, 0x49, 0x7C,
+        0xEA, 0x95, 0x6A, 0xE5, 0x15, 0xD2, 0x26, 0x18, 0x98, 0xFA, 0x05, 0x10,
+        0x15, 0x72, 0x8E, 0x5A, 0x8A, 0xAC, 0xAA, 0x68, 0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF
+};
 
 /* List of supported kex algorithms */
 struct exchange_list_local kex_list = {
@@ -211,7 +240,7 @@ void kex_init()
         struct packet *dh_pck = packet_new(1024);
 
         log_info("Reading KEX_DH_REPLY packet");
-        
+
         kex_dh_reply();
 
 
@@ -257,7 +286,7 @@ struct packet* kex_dh_init()
 struct packet* kex_dh_reply()
 {
         struct packet *dh_pck;
-        
+
         dh_pck = session.read_packet();
 
         macssh_print_array(dh_pck->data, dh_pck->len);
@@ -266,16 +295,76 @@ struct packet* kex_dh_reply()
         dh_pck->rd_pos += 1; //Skip type
         int key_len = dh_pck->get_int(dh_pck);
         int id_len = dh_pck->get_int(dh_pck);
-        
-        char *k_s = dh_pck->get_bytes(dh_pck, key_len - 4);
-        char *k_s_id = strncpy(k_s_id, k_s, id_len);
-        
-        macssh_print_embedded_string(k_s, key_len);
-        
+
+        //char *k_s = dh_pck->get_bytes(dh_pck, key_len - 4);
+        //char *k_s_id = strncpy(k_s_id, k_s, id_len);
+
+        struct ssh_rsa_key *rsa_key = malloc(sizeof (struct ssh_rsa_key));
+
+        mp_init(rsa_key->e);
+        mp_init(rsa_key->n);
+
+        /* Get the RSA host key from the packet */
+        rsa_key->string = dh_pck->get_bytes(dh_pck, id_len);
+        rsa_key->e = dh_pck->get_mpint(dh_pck);
+        rsa_key->n = dh_pck->get_mpint(dh_pck);
+
+        if (mp_count_bits(rsa_key->n) < MIN_RSA_KEYLEN)
+                log_warn("RSA key too short");
+
         mp_int *dh_f;
-        
+
         dh_f = dh_pck->get_mpint(dh_pck);
-        
+
+        DEF_MP_INT(dh_p);
+        DEF_MP_INT(dh_p_min1);
+        mp_int *dh_e = NULL;
+
+        unsigned int dh_p_len = 256;
+
+        mp_init(&dh_p);
+        mp_init(&dh_p_min1);
+
+        mp_read_unsigned_bin(&dh_p, dh_p_14, dh_p_len);
+
+        if (mp_sub_d(&dh_p, 1, &dh_p_min1) != MP_OKAY) {
+                log_warn("Diffie-Hellman error");
+                exit(EXIT_FAILURE);
+        }
+
+        /* Check that dh_pub_them (dh_e or dh_f) is in the range [2, p-2] */
+        if (mp_cmp(dh_f, &dh_p_min1) != MP_LT
+                || mp_cmp_d(dh_f, 1) != MP_GT) {
+                log_warn("Diffie-Hellman error");
+                exit(EXIT_FAILURE);
+        }
+
+        /* K = e^y mod p = f^x mod p */
+        //m_mp_alloc_init_multi(&ses.dh_K, NULL);
+        //if (mp_exptmod(dh_pub_them, &param->priv, &dh_p, ses.dh_K) != MP_OKAY) {
+        //        dropbear_exit("Diffie-Hellman error");
+        //}
+
+        mp_init(&session.dh->dh_k);
+        if (mp_exptmod(dh_f, &session.dh->priv_key, &dh_p,
+                &session.dh->dh_k) != MP_OKAY) {
+                log_warn("Diffie-Hellman error");
+                exit(EXIT_FAILURE);
+        }
+
+        /* clear no longer needed vars */
+        mp_clear_multi(&dh_p, &dh_p_min1, NULL);
+
+        /* Create the remainder of the hash buffer, to generate the exchange hash */
+        /* K_S, the host key */
+
+        struct packet *pck = packet_new(2048);
+
+        pck->put_mpint(pck, &session.dh->pub_key);
+        pck->put_mpint(pck, dh_f);
+        pck->put_mpint(pck, &session.dh->dh_k);
+
+        //buf_put_pub_key(ses.kexhashbuf, hostkey, ses.newkeys->algo_hostkey);
 }
 
 /* Negotiate algorithms by mathing remote and local versions */
@@ -327,7 +416,7 @@ void kex_guess()
 /* Diffie-Hellman computation */
 struct diffie_hellman* kex_dh_compute()
 {
-        struct diffie_hellman *dh_vals = NULL;
+        struct diffie_hellman *dh_vals = &session.dh;
 
         DEF_MP_INT(dh_p);
         DEF_MP_INT(dh_q);
@@ -336,32 +425,6 @@ struct diffie_hellman* kex_dh_compute()
         /* Initialize dh struct and mp_int's */
         dh_vals = malloc(sizeof (struct diffie_hellman));
         mp_init_multi(&dh_vals->pub_key, &dh_vals->priv_key, &dh_g, &dh_p, &dh_q, NULL);
-
-        /* diffie-hellman-group14-sha1 value for p */
-        const unsigned char dh_p_14[256] = {
-                0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xC9, 0x0F, 0xDA, 0xA2,
-                0x21, 0x68, 0xC2, 0x34, 0xC4, 0xC6, 0x62, 0x8B, 0x80, 0xDC, 0x1C, 0xD1,
-                0x29, 0x02, 0x4E, 0x08, 0x8A, 0x67, 0xCC, 0x74, 0x02, 0x0B, 0xBE, 0xA6,
-                0x3B, 0x13, 0x9B, 0x22, 0x51, 0x4A, 0x08, 0x79, 0x8E, 0x34, 0x04, 0xDD,
-                0xEF, 0x95, 0x19, 0xB3, 0xCD, 0x3A, 0x43, 0x1B, 0x30, 0x2B, 0x0A, 0x6D,
-                0xF2, 0x5F, 0x14, 0x37, 0x4F, 0xE1, 0x35, 0x6D, 0x6D, 0x51, 0xC2, 0x45,
-                0xE4, 0x85, 0xB5, 0x76, 0x62, 0x5E, 0x7E, 0xC6, 0xF4, 0x4C, 0x42, 0xE9,
-                0xA6, 0x37, 0xED, 0x6B, 0x0B, 0xFF, 0x5C, 0xB6, 0xF4, 0x06, 0xB7, 0xED,
-                0xEE, 0x38, 0x6B, 0xFB, 0x5A, 0x89, 0x9F, 0xA5, 0xAE, 0x9F, 0x24, 0x11,
-                0x7C, 0x4B, 0x1F, 0xE6, 0x49, 0x28, 0x66, 0x51, 0xEC, 0xE4, 0x5B, 0x3D,
-                0xC2, 0x00, 0x7C, 0xB8, 0xA1, 0x63, 0xBF, 0x05, 0x98, 0xDA, 0x48, 0x36,
-                0x1C, 0x55, 0xD3, 0x9A, 0x69, 0x16, 0x3F, 0xA8, 0xFD, 0x24, 0xCF, 0x5F,
-                0x83, 0x65, 0x5D, 0x23, 0xDC, 0xA3, 0xAD, 0x96, 0x1C, 0x62, 0xF3, 0x56,
-                0x20, 0x85, 0x52, 0xBB, 0x9E, 0xD5, 0x29, 0x07, 0x70, 0x96, 0x96, 0x6D,
-                0x67, 0x0C, 0x35, 0x4E, 0x4A, 0xBC, 0x98, 0x04, 0xF1, 0x74, 0x6C, 0x08,
-                0xCA, 0x18, 0x21, 0x7C, 0x32, 0x90, 0x5E, 0x46, 0x2E, 0x36, 0xCE, 0x3B,
-                0xE3, 0x9E, 0x77, 0x2C, 0x18, 0x0E, 0x86, 0x03, 0x9B, 0x27, 0x83, 0xA2,
-                0xEC, 0x07, 0xA2, 0x8F, 0xB5, 0xC5, 0x5D, 0xF0, 0x6F, 0x4C, 0x52, 0xC9,
-                0xDE, 0x2B, 0xCB, 0xF6, 0x95, 0x58, 0x17, 0x18, 0x39, 0x95, 0x49, 0x7C,
-                0xEA, 0x95, 0x6A, 0xE5, 0x15, 0xD2, 0x26, 0x18, 0x98, 0xFA, 0x05, 0x10,
-                0x15, 0x72, 0x8E, 0x5A, 0x8A, 0xAC, 0xAA, 0x68, 0xFF, 0xFF, 0xFF, 0xFF,
-                0xFF, 0xFF, 0xFF, 0xFF
-        };
 
         unsigned int dh_p_len = 256;
 
@@ -390,4 +453,80 @@ struct diffie_hellman* kex_dh_compute()
         mp_clear_multi(&dh_g, &dh_p, &dh_q, NULL);
 
         return dh_vals;
+}
+
+FILE* pub_keys_open(char* path)
+{
+
+}
+
+int pub_key_check(FILE *pub_key)
+{
+        char *blob = malloc(1024);
+        char *line;
+        int line_len;
+        int cont = 0;
+
+        char *ptr;
+        char *head_subj = NULL;
+        char *head_comm = NULL;
+        char *head_priv = NULL;
+
+        while (getline(&line, &line_len, pub_key) > 0) {
+
+                if (cont)
+                        strncat(ptr, line, line_len);
+
+                else if (!strchr(line, '\\') && !strchr(line, ':')) {
+                        strncat(blob, line, line_len);
+                }
+                
+                else if (strchr(line, '\\')) {
+                        cont = 1;
+                }
+                
+                else if(!strchr(line, '\\')) {
+                        cont = 0;
+                }
+                
+                else if (strchr(line, ':')) {
+                        if (strstr(line, PUB_KEY_HEADER_SUBJECT)) {
+                                if (!head_subj)
+                                        head_subj = calloc(line_len, 1);
+                                else
+                                        head_subj = realloc(head_subj,
+                                        strlen(head_subj) + line_len);
+
+                                ptr = head_subj;
+                        }
+                        if (strstr(line, PUB_KEY_HEADER_COMMENT)) {
+                                if (!head_comm)
+                                        head_comm = calloc(line_len, 1);
+                                else
+                                        head_comm = realloc(head_comm,
+                                        strlen(head_comm) + line_len);
+
+                                ptr = head_comm;
+                        }
+                        if (strstr(line, PUB_KEY_HEADER_PRIVATE)) {
+                                if (!head_priv)
+                                        head_priv = calloc(line_len, 1);
+                                else
+                                        head_priv = realloc(head_priv,
+                                        strlen(head_priv) + line_len);
+
+                                ptr = head_priv;
+                        }
+
+                }
+        }
+
+        if (head_subj)
+                log_info("Found subject header: %s", head_subj);
+        if (head_comm)
+                log_info("Found comment header: %s", head_comm);
+        if (head_priv)
+                log_info("Found private header: %s", head_priv);
+
+        log_info("Found pub_key: %s", blob);
 }
