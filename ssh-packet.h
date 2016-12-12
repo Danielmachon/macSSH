@@ -27,7 +27,7 @@
 #define SSH_PACKET_H
 
 /* For mpint */
-#include "tommath.h"
+#include "bignum/bignum.h"
 
 #include "list.h"
 

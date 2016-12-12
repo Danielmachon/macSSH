@@ -40,9 +40,9 @@
 #include <sys/time.h>
 #include <unistd.h>
 
-/* tomcrypt and tommath */
-#include <tomcrypt.h>
-#include <tommath.h>
+/* crypt and bignum */
+#include "crypt/crypt.h"
+#include "bignum/bignum.h"
 
 #endif /* INCLUDES_H */
 

@@ -26,7 +26,7 @@
 #ifndef KEX_H
 #define KEX_H
 
-#include "libtommath/tommath.h"
+#include "bignum/bignum.h"
 
 enum {
 	KEX_OK = 0b00000001,
