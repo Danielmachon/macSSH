@@ -28,7 +28,7 @@ struct channel {
 	
 	int channel_id;		//Id of specific channel
 	
-	int write_fd;		//Local write dile descriptor (STDOUT e.g)
+	int write_fd;		//Local write file descriptor (STDOUT e.g)
 	int read_fd;		//Local read file descriptor (STDIN e.g)
 	
 	struct buffer ch_buf_in;

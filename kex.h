@@ -26,7 +26,7 @@
 #ifndef KEX_H
 #define KEX_H
 
-#include "bignum/bignum.h"
+#include "includes.h"
 
 enum {
 	KEX_OK = 0b00000001,

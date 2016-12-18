@@ -40,9 +40,14 @@
 #include <sys/time.h>
 #include <unistd.h>
 
+/*
+ * Linked-list
+ */
+#include "list.h"
+
 /* crypt and bignum */
-#include "crypt/crypt.h"
-#include "bignum/bignum.h"
+#include "tomcrypt.h"
+#include "tommath.h"
 
 #endif /* INCLUDES_H */
 

@@ -14,7 +14,7 @@
 #ifndef KEYS_H
 #define KEYS_H
 
-#include "bignum/bignum.h"
+#include "tommath.h"
 
 #define MIN_RSA_KEYLEN		512
 

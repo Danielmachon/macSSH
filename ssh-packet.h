@@ -26,10 +26,7 @@
 #ifndef SSH_PACKET_H
 #define SSH_PACKET_H
 
-/* For mpint */
-#include "bignum/bignum.h"
-
-#include "list.h"
+#include "includes.h"
 
 #define PACKET_MAX_SIZE  35000
 
