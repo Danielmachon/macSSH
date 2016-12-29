@@ -326,10 +326,24 @@ static struct exchange_list_remote* get_exch_list(struct packet * pck)
         return ret;
 }
 
+/*
+ * Resize the packet.
+ * 
+ * Size can be positive or negative in order to grow,
+ * or shrink the size.
+ */
+int resize(struct packet *pck, int size)
+{
+	pck->data = realloc(pck->data, pck->size + size);
+	
+	pck->size + size;
+}
+
 void packet_init(struct packet * pck)
 {
         pck->len = 0;
         pck->wr_pos = 0;
+	pck->rd_pos = 0;
 
         /* Puts */
         pck->put_byte = &put_byte;
@@ -349,6 +363,9 @@ void packet_init(struct packet * pck)
         pck->get_str = &get_str;
         pck->get_exch_list = &get_exch_list;
         pck->get_mpint = &get_mpint;
+	
+	/* Other */
+	pck->resize = &resize;
 }
 
 struct packet * packet_new(unsigned int size)

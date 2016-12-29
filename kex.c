@@ -238,7 +238,7 @@ void kex_init()
 
 	if (ses.write_packet(pck) == pck->len)
 		fprintf(stderr, "All bytes were transmitted\n");
-	
+
 }
 
 /* Initialize the diffie-hellman part of the key-exchange.
@@ -341,6 +341,8 @@ int kex_dh_reply()
 	 */
 	mp_copy(dh_f, &ses.dh->dh_f);
 
+	ses.dh->key = rsa_key;
+
 }
 
 int kex_dh_exchange_hash()
@@ -361,19 +363,18 @@ int kex_dh_exchange_hash()
 		exit(EXIT_FAILURE);
 	}
 
-	/* Check that dh_pub_them (dh_e or dh_f) is in the range [2, p-2] */
+	/* 
+	 * Check that dh_pub_them (dh_e or dh_f) is in the range [2, p-2] 
+	 */
 	if (mp_cmp(&dh_f, &dh_p_min1) != MP_LT
 		|| mp_cmp_d(&dh_f, 1) != MP_GT) {
 		macssh_warn("Diffie-Hellman error");
 		exit(EXIT_FAILURE);
 	}
 
-	/* K = e^y mod p = f^x mod p */
-	//m_mp_alloc_init_multi(&ses.dh_K, NULL);
-	//if (mp_exptmod(dh_pub_them, &param->priv, &dh_p, ses.dh_K) != MP_OKAY) {
-	//        dropbear_exit("Diffie-Hellman error");
-	//}
-
+	/* 
+	 * K = e^y mod p = f^x mod p 
+	 */
 	mp_init(&ses.dh->dh_k);
 	if (mp_exptmod(&dh_f, &ses.dh->priv_key, &dh_p,
 		&ses.dh->dh_k) != MP_OKAY) {
@@ -384,16 +385,41 @@ int kex_dh_exchange_hash()
 	/* clear no longer needed vars */
 	mp_clear_multi(&dh_p, &dh_p_min1, NULL);
 
-	/* Create the remainder of the hash buffer, to generate the exchange hash */
-	/* K_S, the host key */
+	/*
+	 * Build the exchange hash packet
+	 */
+	struct packet *pck = packet_new(4096);
+	const struct ltc_hash_descriptor *hash;
+	hash_state hst;
 
-	struct packet *pck = packet_new(2048);
+	pck->put_str(pck, "ssh-rsa");
+	pck->put_mpint(pck, ses.dh->key->e); //Their RSA exponent
+	pck->put_mpint(pck, ses.dh->key->n); //Their RSA modulus
 
-	pck->put_mpint(pck, &ses.dh->pub_key);
-	pck->put_mpint(pck, &dh_f);
-	pck->put_mpint(pck, &ses.dh->dh_k);
+	pck->put_mpint(pck, &ses.dh->pub_key); //dh_e
+	pck->put_mpint(pck, &dh_f); //dh_f
+	pck->put_mpint(pck, &ses.dh->dh_k); //dh_k
 
-	//buf_put_pub_key(ses.kexhashbuf, hostkey, ses.newkeys->algo_hostkey);	
+	hash = (const struct ltc_hash_descriptor *)
+		ses.crypto->keys.hash->algorithm;
+
+	/*
+	 * Compute the hash and send it.
+	 * 
+	 * The packet might be resized to make room for the hash,
+	 * which will be concatenated to the original data.
+	 */
+	hash->init(&hst);
+	hash->process(&hst, pck->data, pck->len);
+
+	SET_WR_POS(pck, pck->len);
+	
+	if (pck->len + hash->hashsize > pck->size)
+		pck->resize(pck, hash->hashsize);
+
+	hash->done(&hst, pck->data + pck->wr_pos);
+
+	ses.write_packet(pck);
 }
 
 /* Negotiate algorithms by mathing remote and local versions */

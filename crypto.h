@@ -37,7 +37,7 @@ struct keys {
 	struct algorithm *hash;
 	struct algorithm *compress;
 	struct algorithm *lang;
-	
+		
 };
 
 struct crypto {

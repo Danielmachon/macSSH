@@ -30,6 +30,8 @@
 
 #define PACKET_MAX_SIZE  35000
 
+#define SET_WR_POS(a, b) { a->wr_pos = b; }
+#define SET_RD_POS(a, b) { a->rd_pos = b; }
 #define INCREMENT_WR_POS(a, b) { a->wr_pos += b; }
 #define INCREMENT_RD_POS(a, b) { a->rd_pos += b; }
 
@@ -72,8 +74,12 @@ struct packet {
 	unsigned char (*get_byte_at)(struct packet *pck, int index);
 	unsigned char (*get_byte_at_offset)(struct packet *pck, int offset);
 	unsigned char* (*get_bytes)(struct packet *pck, int num);
-
 	struct exchange_list_remote* (*get_exch_list)(struct packet *pck);
+	
+	/*
+	 * Other operations
+	 */
+	int (*resize)(struct packet *pck, int size);
 	
 	/*
 	 * Crypto operations

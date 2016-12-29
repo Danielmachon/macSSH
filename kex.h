@@ -35,6 +35,8 @@ enum {
 
 struct diffie_hellman {
 	
+	struct ssh_rsa_key *key;
+	
 	/*
 	 * Our
 	 */
