@@ -80,7 +80,10 @@ void kex_init();
 void kex_guess();
 
 int kex_dh_init();
+int kex_dh_compute();
 int kex_dh_reply();
+int kex_dh_exchange_hash();
+int kex_dh_new_keys();
 
 #endif /* KEX_H */
 

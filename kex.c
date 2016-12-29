@@ -330,6 +330,12 @@ int kex_dh_reply()
 
 	if (mp_count_bits(rsa_key->n) < MIN_RSA_KEYLEN)
 		macssh_warn("RSA key too short");
+	
+	/*
+	 * Check host-key against local database
+	 */
+	FILE *f = pub_keys_open();
+	
 
 	/*
 	 * Get 'f' value.
@@ -413,13 +419,26 @@ int kex_dh_exchange_hash()
 	hash->process(&hst, pck->data, pck->len);
 
 	SET_WR_POS(pck, pck->len);
-	
+
 	if (pck->len + hash->hashsize > pck->size)
 		pck->resize(pck, hash->hashsize);
 
 	hash->done(&hst, pck->data + pck->wr_pos);
 
 	ses.write_packet(pck);
+}
+
+int kex_dh_new_keys()
+{
+	struct packet *pck;
+
+	pck = packet_new(1024);
+
+	pck->put_byte(pck, SSH_MSG_NEWKEYS);
+
+	/*
+	 * Packets needs to be encrypted from here on
+	 */
 }
 
 /* Negotiate algorithms by mathing remote and local versions */
@@ -468,9 +487,77 @@ void kex_guess()
 
 }
 
-FILE* pub_keys_open(char* path)
+static FILE* pub_keys_open()
 {
+	FILE *fd = NULL;
+	char *filename = NULL;
+	char *homedir = NULL;
 
+	/*
+	 * Try to get homedir using env variable
+	 */
+	homedir = getenv("HOME");
+
+	/*
+	 * Nope? 
+	 * Try to get homedir from passwd struct containing,
+	 * user information.
+	 */
+	if (!homedir) {
+		struct passwd * pw = NULL;
+		pw = getpwuid(getuid());
+
+		if (pw)
+			homedir = pw->pw_dir;
+	}
+
+	if (!homedir) {
+		macssh_warn("Could not determine HOME folder of current user");
+		return NULL;
+	}
+
+	int len;
+	len = strlen(homedir);
+	filename = alloca(len + 18); /* "/.ssh/known_hosts" and null-terminator*/
+
+	snprintf(filename, len + 18, "%s/.ssh", homedir);
+
+	/*
+	 * 
+	 */
+	struct stat st = {0};
+
+	if (stat(filename, &st) == -1)
+		mkdir(filename, 0744);
+	else
+		macssh_info("%s already exsist", filename);
+
+	snprintf(filename, len + 18, "%s/.ssh/known_hosts", homedir);
+	
+	/*
+	 * Open for reading and appending (writing at end of file).  The
+         * file is created if it does not exist.  The initial file
+         * position for reading is at the beginning of the file, but
+         * output is always appended to the end of the file.
+	 */
+	fd = fopen(filename, "a+");
+	
+	if(!fd) 
+		if(errno == EACCES || errno == EROFS) {
+			macssh_info("Could not open %s for writing",
+				filename);
+			
+			/*
+			 * Try open for reading only?
+			 */
+			fd = fopen(filename, "r");
+		}
+	
+	if(!fd)
+		macssh_info("Could not open %s for reading", filename);
+	
+	return fd;
+			
 }
 
 int pub_key_check(FILE *pub_key)
