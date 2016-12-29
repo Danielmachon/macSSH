@@ -33,13 +33,13 @@ extern FILE* pub_keys_open(char *path);
 extern int pub_key_check(FILE *pub_key);
 
 struct ssh_rsa_key {
-	char *string;
+	char *blob;
 	mp_int *e;
 	mp_int *n;
 };
 
 struct ssh_dss_key {
-	char *string;
+	char *blob;
 	mp_int *p;
 	mp_int *q;
 	mp_int *g;

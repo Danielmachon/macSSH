@@ -34,9 +34,19 @@ enum {
 };
 
 struct diffie_hellman {
+	
+	/*
+	 * Our
+	 */
 	mp_int pub_key;
 	mp_int priv_key;
 	mp_int dh_k;
+	
+	/*
+	 * Their
+	 */
+	mp_int dh_f;
+	
 };
 
 struct algorithm {
@@ -67,8 +77,8 @@ extern struct exchange_list_local lang_list;
 void kex_init();
 void kex_guess();
 
-struct packet* kex_dh_init();
-struct packet* kex_dh_reply();
+int kex_dh_init();
+int kex_dh_reply();
 
 #endif /* KEX_H */
 

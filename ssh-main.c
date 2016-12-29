@@ -112,13 +112,12 @@ int main(int argc, char **argv)
 	if (!ssh_parse_argv(argc, argv))
 		return EXIT_SUCCESS;
 
-	/* Setup sesssion state */
-	session_init(&session);
+	/* Setup session state */
+	session_init(&ses);
         
         client_session_loop();
 
-finish:
-	session_free();
+	session_free(&ses);
 
 	return(EXIT_SUCCESS);
 }

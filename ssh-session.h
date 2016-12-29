@@ -38,11 +38,14 @@ void identify();
 void read_identification_string();
 
 enum {
-	NONE = 0,
-	IDENTIFIED = 1,
-	HAVE_KEX_INIT = 2,
-	KEXED = 3,
-	SETUP = 4,
+	DEADBEEF	= -1,
+	NONE		= 0,
+	IDENTIFIED	= 1,
+	HAVE_KEX_INIT	= 2,
+	KEXED		= 3,
+	AUTHED		= 4,
+	REKEX		= 5,
+	SETUP		= 6,
 };
 
 struct session {
@@ -59,7 +62,9 @@ struct session {
 	
 	char remote_id[256];
 	
-	/* Number of kex'es (initial + renegotiation) */
+	/* 
+	 * Number of kex'es (initial + renegotiation) 
+	 */
 	int kex_num;
 	
 	struct crypto *crypto;
@@ -68,17 +73,23 @@ struct session {
 
 	struct channel *channels;
 
-	/* Partial read packet. Might be incomplete
+	/* 
+	 * Partial read packet. Might be incomplete
 	 * after a read. Is put in ingoing buffer if
-	 * complete. */
-	struct packet *packet_part;
+	 * complete. 
+	 */
+	struct packet *pck_tmp;
+	
 	int packet_flag;
         
-        struct packet payload;
+        struct packet pay;
 
 	struct buffer *buf_in;
 	struct buffer *buf_out;
 
+	/*
+	 * Some packet handlers
+	 */
 	int (*write_packet)(struct packet *pck);
 	struct packet* (*read_packet)();
 	void (*process_packet)();
@@ -90,7 +101,7 @@ struct session {
 	/* KEX */
 	void (*kex_init)();
 
-} session;
+} ses;
 
 #endif /* SSH_SESSION_H */
 

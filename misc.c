@@ -48,9 +48,12 @@ void macssh_print_file(FILE *file, const char *msg)
 
 void macssh_print_array(void *data, int len)
 {
+	char *ptr = (char *) data;
+	
 	int x;
 	for(x = 0; x < len; x++)  {
-		fprintf(stderr, "[%u]", ((unsigned char *)data)[x]);
+		fprintf(stderr, "[%u]=%u ", x, *(ptr + x));
+		
 		if(x % 15 == 0)
 			fprintf(stderr, "\n");
 	}

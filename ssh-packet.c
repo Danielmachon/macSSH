@@ -77,24 +77,24 @@ void put_byte(struct packet *pck, unsigned char data)
 }
 
 /* This function does NOT increment the write offset */
-void put_byte_at(struct packet *pck, unsigned char data, int index)
+static void put_byte_at(struct packet *pck, unsigned char data, int index)
 {
         *(pck->data + index) = data;
 }
 
-void put_bytes(struct packet *pck, void *data, int len)
+static void put_bytes(struct packet *pck, void *data, int len)
 {
         memcpy(pck->data + pck->len, (unsigned char*) data, len);
 
         pck->len += len;
 }
 
-void put_char(struct packet *pck, unsigned char data)
+static void put_char(struct packet *pck, unsigned char data)
 {
         put_byte(pck, data);
 }
 
-void put_int(struct packet *pck, int data)
+static void put_int(struct packet *pck, int data)
 {
         /* Macro from tomcrypt */
         STORE32H(data, pck->data + pck->len);
@@ -102,7 +102,7 @@ void put_int(struct packet *pck, int data)
         pck->len += 4;
 }
 
-void put_str(struct packet *pck, const char *data)
+static void put_str(struct packet *pck, const char *data)
 {
         memcpy(pck->data + pck->len, data, strlen(data));
         pck->len += strlen(data);
@@ -113,12 +113,12 @@ void put_str(struct packet *pck, const char *data)
  * Unnecessary leading bytes with the value 0 or 255 MUST NOT be
  * included.  The value zero MUST be stored as a string with zero
  * bytes of data. */
-void put_mpint(struct packet *pck, mp_int *mpi)
+static void put_mpint(struct packet *pck, mp_int *mpi)
 {
         unsigned int len, pad = 0;
 
         if (SIGN(mpi) == MP_NEG)
-                log_warn("negative bignum");
+                macssh_warn("negative bignum");
 
 
         /* zero check */
@@ -144,14 +144,14 @@ void put_mpint(struct packet *pck, mp_int *mpi)
                         pck->put_byte(pck, 0x00);
                 }
                 if (mp_to_unsigned_bin(mpi, pck->data + pck->len) != MP_OKAY) {
-                        log_warn("mpint error");
+                        macssh_warn("mpint error");
                 }
                 pck->len += len - pad;
         }
 
 }
 
-void put_exch_list(struct packet* pck, struct exchange_list_local* data)
+static void put_exch_list(struct packet* pck, struct exchange_list_local* data)
 {
         struct packet *tmp = packet_new(1024);
 
@@ -170,20 +170,27 @@ void put_exch_list(struct packet* pck, struct exchange_list_local* data)
 
 }
 
-int get_int(struct packet * pck)
+static int get_int(struct packet * pck)
 {
         int ret;
-        char *ptr = &ret;
+	
+        char *ptr = (char *) &ret;
         LOAD32H(ret, pck->data + pck->rd_pos);
         
         pck->rd_pos += 4;
         return ret;
 }
 
-mp_int* get_mpint(struct packet *pck)
+static mp_int* get_mpint(struct packet *pck, mp_int *mp)
 {
-        mp_int dh_e = {0, 0, 0, NULL};
-        mp_init(&dh_e);
+        mp_int *dh_e;
+	
+	if(!mp)
+		dh_e = malloc(sizeof(mp_int));
+	else
+		dh_e = mp;
+	
+        mp_init_size(dh_e, 128);
         
         macssh_print_array(pck->data, pck->len);
 
@@ -193,29 +200,27 @@ mp_int* get_mpint(struct packet *pck)
                 macssh_exit("error in get_mpint", errno);
 
         /* Check if ms bit is set */
-        if (*(unsigned char *) (pck->data + pck->rd_pos) & (1 << (CHAR_BIT - 1)))
+        if (*((unsigned char *) (pck->data + pck->rd_pos)) & (1 << (CHAR_BIT - 1)))
                 macssh_exit("error in get_mpint", errno);
 
-        if (mp_read_unsigned_bin(&dh_e, pck->data + pck->rd_pos, len) != MP_OKAY)
+        if (mp_read_unsigned_bin(dh_e, (unsigned char *) (pck->data + pck->rd_pos),
+		len) != MP_OKAY)
                 macssh_exit("error in get_mpint", errno);
 
         /* Increment read position */
         pck->data += len;
 
         /* Remember to free */
-        return &dh_e;
+        return dh_e;
 
 }
 
-unsigned char get_char(struct packet * pck)
+static char* get_str(struct packet * pck)
 {
-        return get_byte(pck);
-}
 
-char* get_str(struct packet * pck)
-{
-        /* We are assuming a str i zero terminated
-         * Undefined behaviour if it is not */
+	/*
+	 * Assumption: pck->data is a zero terminates string
+	 */
 
         char *str;
         int len;
@@ -229,7 +234,7 @@ char* get_str(struct packet * pck)
 
 }
 
-unsigned char get_byte(struct packet * pck)
+static unsigned char get_byte(struct packet *pck)
 {
         unsigned char ret;
 
@@ -240,7 +245,24 @@ unsigned char get_byte(struct packet * pck)
         return ret;
 }
 
-unsigned char* get_bytes(struct packet *pck, int num)
+static unsigned char get_byte_at(struct packet *pck, int index)
+{
+        unsigned char ret;
+
+        ret = *(((unsigned char *) pck->data) + index);
+
+        return ret;	
+}
+static unsigned char get_byte_at_offset(struct packet *pck, int offset)
+{
+        unsigned char ret;
+
+        ret = *(((unsigned char *) pck->data) + pck->rd_pos + offset);
+
+        return ret;	
+}
+
+static unsigned char* get_bytes(struct packet *pck, int num)
 {
         unsigned char *ret;
         ret = malloc(num);
@@ -249,8 +271,13 @@ unsigned char* get_bytes(struct packet *pck, int num)
         return ret;
 }
 
+static unsigned char get_char(struct packet * pck)
+{
+        return get_byte(pck);
+}
+
 /* Iterate through remote KEX_INIT packet */
-struct exchange_list_remote* get_exch_list(struct packet * pck)
+static struct exchange_list_remote* get_exch_list(struct packet * pck)
 {
         struct exchange_list_remote *ret;
         int len;
@@ -312,10 +339,12 @@ void packet_init(struct packet * pck)
         pck->put_bytes = &put_bytes;
         pck->put_exch_list = &put_exch_list;
         pck->put_mpint = &put_mpint;
-
+	
         /* Gets */
         pck->get_int = &get_int;
         pck->get_byte = &get_byte;
+	pck->get_byte_at = &get_byte_at;
+	pck->get_byte_at_offset = &get_byte_at_offset;
         pck->get_bytes = &get_bytes;
         pck->get_str = &get_str;
         pck->get_exch_list = &get_exch_list;
