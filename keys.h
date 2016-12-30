@@ -24,13 +24,9 @@
 
 #define PUB_KEY_BEGIN		"---- BEGIN SSH2 PUBLIC KEY ----"
 #define PUB_KEY_END		"---- END SSH2 PUBLIC KEY ----"
-#define PUB_KEY_HEADER_SUBJECT	"Subject"
-#define PUB_KEY_HEADER_COMMENT	"Comment"
-#define PUB_KEY_HEADER_PRIVATE	"x-"
-
-/* kex.c */
-extern FILE* pub_keys_open(char *path);
-extern int pub_key_check(FILE *pub_key);
+#define HOSTKEY_HEADER_SUBJECT	"Subject"
+#define HOSTKEY_HEADER_COMMENT	"Comment"
+#define HOSTKEY_HEADER_PRIVATE	"x-"
 
 struct ssh_rsa_key {
 	char *blob;
@@ -45,6 +41,8 @@ struct ssh_dss_key {
 	mp_int *g;
 	mp_int *y;
 };
+
+unsigned char *ssh_key_get_fingerprint(char *key, int len, int type);
 
 #endif /* KEYS_H */
 

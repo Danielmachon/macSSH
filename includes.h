@@ -39,11 +39,14 @@
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <unistd.h>
+#include <pwd.h>
 
 /*
  * Linked-list
  */
 #include "list.h"
+
+#include "ssh-options.h"
 
 /* crypt and bignum */
 #include "tomcrypt.h"

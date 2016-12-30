@@ -29,8 +29,10 @@
 #define MACSSH_SUCCESS	0
 #define MACSSH_FAILURE	-1
 
+/*
+ * Move this elsewhere !!!
+ */
 #define MACSSH_3DES
-
 #define SHA1_HASH_SIZE 20
 #define MD5_HASH_SIZE 16
 #define MAX_HASH_SIZE 64 /* sha512 */

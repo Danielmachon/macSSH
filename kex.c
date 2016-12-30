@@ -41,6 +41,11 @@ int kex_dh_compute();
 int kex_dh_init();
 int kex_dh_reply();
 
+static int hostkey_check(char *hostkey);
+static FILE* hostkey_open_db();
+static int hostkey_validate(unsigned char* key, unsigned int len,
+	const char* algoname);
+
 /* Common generator for diffie-hellman-group14 */
 const int DH_G_VAL = 2;
 
@@ -306,41 +311,48 @@ int kex_dh_init()
 /* Server response to a client kex_dh_init */
 int kex_dh_reply()
 {
-	struct packet *dh_pck;
+	struct packet *pck;
 
-	dh_pck = ses.read_packet();
+	pck = ses.read_packet();
 
-	macssh_print_array(dh_pck->data, dh_pck->len);
-	macssh_print_embedded_string(dh_pck->data, dh_pck->len);
+	macssh_print_array(pck->data, pck->len);
+	macssh_print_embedded_string(pck->data, pck->len);
 
 	/*
 	 * Get the host-key.
 	 */
-	INCREMENT_RD_POS(dh_pck, 1);
+	INCREMENT_RD_POS(pck, 1);
 
-	int key_len = dh_pck->get_int(dh_pck);
-	int str_len = dh_pck->get_int(dh_pck);
+	int key_len = pck->get_int(pck);
+	int str_len = pck->get_int(pck);
 
 	struct ssh_rsa_key *rsa_key = malloc(sizeof(struct ssh_rsa_key));
 
-	rsa_key->blob = dh_pck->get_bytes(dh_pck, str_len);
+	rsa_key->blob = pck->get_bytes(pck, key_len);
+	
+	/* Rewind :-) */
+	INCREMENT_RD_POS(pck, -key_len);
 
-	rsa_key->e = dh_pck->get_mpint(dh_pck, NULL);
-	rsa_key->n = dh_pck->get_mpint(dh_pck, NULL);
+	rsa_key->e = pck->get_mpint(pck, NULL);
+	rsa_key->n = pck->get_mpint(pck, NULL);
 
 	if (mp_count_bits(rsa_key->n) < MIN_RSA_KEYLEN)
 		macssh_warn("RSA key too short");
-	
+
 	/*
-	 * Check host-key against local database
+	 * Try to open the local key database then,
+	 * check host-key against stored base64 keys.
 	 */
-	FILE *f = pub_keys_open();
+	FILE *f = hostkey_open_db();
+	if(!f)
+		macssh_err("Could not open ~.ssh/known_hosts");
 	
+	hostkey_validate(rsa_key->blob, key_len, "ssh-rsa");
 
 	/*
 	 * Get 'f' value.
 	 */
-	mp_int *dh_f = dh_pck->get_mpint(dh_pck, NULL);
+	mp_int *dh_f = pck->get_mpint(pck, NULL);
 
 	/*
 	 * Store a copy in DH struct.
@@ -487,7 +499,7 @@ void kex_guess()
 
 }
 
-static FILE* pub_keys_open()
+static FILE* hostkey_open_db()
 {
 	FILE *fd = NULL;
 	char *filename = NULL;
@@ -527,40 +539,88 @@ static FILE* pub_keys_open()
 	 */
 	struct stat st = {0};
 
-	if (stat(filename, &st) == -1)
+	if (stat(filename, &st) == -1) 
 		mkdir(filename, 0744);
 	else
 		macssh_info("%s already exsist", filename);
 
 	snprintf(filename, len + 18, "%s/.ssh/known_hosts", homedir);
-	
+
 	/*
 	 * Open for reading and appending (writing at end of file).  The
-         * file is created if it does not exist.  The initial file
-         * position for reading is at the beginning of the file, but
-         * output is always appended to the end of the file.
+	 * file is created if it does not exist.  The initial file
+	 * position for reading is at the beginning of the file, but
+	 * output is always appended to the end of the file.
 	 */
 	fd = fopen(filename, "a+");
-	
-	if(!fd) 
-		if(errno == EACCES || errno == EROFS) {
+
+	if (!fd)
+		if (errno == EACCES || errno == EROFS) {
 			macssh_info("Could not open %s for writing",
 				filename);
-			
+
 			/*
 			 * Try open for reading only?
 			 */
 			fd = fopen(filename, "r");
 		}
-	
-	if(!fd)
+
+	if (!fd)
 		macssh_info("Could not open %s for reading", filename);
-	
+
 	return fd;
-			
+
 }
 
-int pub_key_check(FILE *pub_key)
+/*
+ * Confirm that this hostkey should be accepted
+ */
+static int hostkey_confirm(unsigned char* keyblob, unsigned int keybloblen,
+	const char* algoname)
+{
+
+	/* Get fingerprint of key */
+	char *fp = ssh_key_get_fingerprint(keyblob, keybloblen, 0);
+
+	fprintf(stderr, "*********************************"
+		"The host: %s  with fingerprint: %s\n" \
+		"is not present in ~.ssh/known_hosts\n"
+		"Are you sure you want to proceed? (y/n)"
+		"***************************************");
+
+	free(fp);
+
+	FILE *tty;
+	char inp = 0;
+
+	tty = fopen("/dev/tty", "r");
+	if (tty) {
+		inp = getc(tty);
+		fclose(tty);
+	} else {
+		inp = getc(stdin);
+	}
+
+	if (inp == 'y') {
+		return 1;
+	}
+
+	return 0;
+}
+
+/*
+ * Validate this hostkey against the database of known hostkeys
+ */
+static int hostkey_validate(unsigned char* key, unsigned int len,
+	const char* algoname)
+{
+	hostkey_check(key);
+}
+
+/*
+ * Retrieve information about a base64 encoded hostkey
+ */
+static int hostkey_check(char *hostkey)
 {
 	char *blob = malloc(1024);
 	char *line;
@@ -572,7 +632,7 @@ int pub_key_check(FILE *pub_key)
 	char *head_comm = NULL;
 	char *head_priv = NULL;
 
-	while (getline(&line, &line_len, pub_key) > 0) {
+	while (getline(&line, &line_len, hostkey) > 0) {
 
 		if (cont)
 			strncat(ptr, line, line_len);
@@ -584,7 +644,7 @@ int pub_key_check(FILE *pub_key)
 		} else if (!strchr(line, '\\')) {
 			cont = 0;
 		} else if (strchr(line, ':')) {
-			if (strstr(line, PUB_KEY_HEADER_SUBJECT)) {
+			if (strstr(line, HOSTKEY_HEADER_SUBJECT)) {
 				if (!head_subj)
 					head_subj = calloc(line_len, 1);
 				else
@@ -593,7 +653,7 @@ int pub_key_check(FILE *pub_key)
 
 				ptr = head_subj;
 			}
-			if (strstr(line, PUB_KEY_HEADER_COMMENT)) {
+			if (strstr(line, HOSTKEY_HEADER_COMMENT)) {
 				if (!head_comm)
 					head_comm = calloc(line_len, 1);
 				else
@@ -602,7 +662,7 @@ int pub_key_check(FILE *pub_key)
 
 				ptr = head_comm;
 			}
-			if (strstr(line, PUB_KEY_HEADER_PRIVATE)) {
+			if (strstr(line, HOSTKEY_HEADER_PRIVATE)) {
 				if (!head_priv)
 					head_priv = calloc(line_len, 1);
 				else
