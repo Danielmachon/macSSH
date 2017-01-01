@@ -1,5 +1,5 @@
 /*
-    This file is part of SSH
+    This file is part of macSSH
     
     Copyright 2016 Daniel Machon
 
@@ -15,12 +15,6 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-/* 
- * File:   includes.h
- * Author: dmachon
- *
- * Created on March 22, 2016, 9:15 PM
  */
 
 #ifndef INCLUDES_H

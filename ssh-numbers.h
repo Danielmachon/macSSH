@@ -1,5 +1,5 @@
 /*
-    This file is part of SSH
+    This file is part of macSSH
     
     Copyright 2016 Daniel Machon
 

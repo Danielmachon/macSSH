@@ -1,5 +1,5 @@
 /*
-    This file is part of SSH
+    This file is part of macSSH
     
     Copyright 2016 Daniel Machon
 
@@ -16,17 +16,12 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-/* 
- * File:   misc.h
- * Author: dmachon
- *
- * Created on March 23, 2016, 10:54 PM
- */
 
 #ifndef MISC_H
 #define MISC_H
 
-
+#define FREE_SAFE(p) do { void ** __p = (void **) &(p);	if(*__p) free(*(__p)); \
+	*(__p) = NULL; } while (0)
 
 /* Print functions */
 void macssh_print(const char *msg);

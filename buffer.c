@@ -1,5 +1,5 @@
 /*
-    This file is part of SSH
+    This file is part of macSSH
     
     Copyright 2016 Daniel Machon
 
@@ -47,7 +47,7 @@ struct packet* buf_peak(struct buffer *buf)
 
 int buf_isempty(struct buffer *buf)
 {
-        return (list_empty(&buf->packets->list));
+        return list_empty(&buf->packets->list);
 }
 
 int buf_len(struct buffer *buf)

@@ -1,5 +1,5 @@
 /*
-    This file is part of SSH
+    This file is part of macSSH
     
     Copyright 2016 Daniel Machon
 
@@ -16,12 +16,6 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-/* 
- * File:   options.h
- * Author: dmachon
- *
- * Created on March 23, 2016, 10:49 PM
- */
 
 #ifndef SSH_OPTIONS_H
 #define SSH_OPTIONS_H
@@ -33,11 +27,12 @@
  * Move this elsewhere !!!
  */
 #define MACSSH_3DES
-#define SHA1_HASH_SIZE 20
-#define MD5_HASH_SIZE 16
-#define MAX_HASH_SIZE 64 /* sha512 */
+#define SHA1_HASH_SIZE		20
+#define MD5_HASH_SIZE		16
+#define MAX_HASH_SIZE		64 /* sha512 */
 
-#define MACSSH_URANDOM_DEV "/dev/urandom"
+#define MACSSH_URANDOM_DEV	"/dev/urandom"
+#define MACSSH_CONF_DIR		"/etc/macssh/"
 
 struct options {
 	

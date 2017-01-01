@@ -1,5 +1,5 @@
 /*
-    This file is part of SSH
+    This file is part of macSSH
     
     Copyright 2016 Daniel Machon
 
@@ -66,7 +66,7 @@ int init_tcp_socket(char *ip, int port, int t_out)
 		int buffersize = 2;
 		setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char *) &rcv_timeval, sizeof(struct timeval));
 		setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &snd_timeval, sizeof(struct timeval));
-		setsockopt(sock, SOL_SOCKET, SO_SNDBUF, &buffersize, 4);
+		//setsockopt(sock, SOL_SOCKET, SO_SNDBUF, &buffersize, 4);
 	}
 
 	server_addr.sin_family = AF_INET;
@@ -82,7 +82,6 @@ int init_tcp_socket(char *ip, int port, int t_out)
 
 int init_tcp_listen_socket(int port)
 {
-	/* Needs to be declared outside while loop */
 	int sock;
 
 	struct hostent *host;

@@ -1,5 +1,5 @@
 /*
-    This file is part of SSH
+    This file is part of macSSH
     
     Copyright 2016 Daniel Machon
 
@@ -15,12 +15,6 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-/* 
- * File:   kex.h
- * Author: dmachon
- *
- * Created on March 25, 2016, 10:16 PM
  */
 
 #ifndef KEX_H

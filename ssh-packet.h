@@ -1,5 +1,5 @@
 /*
-    This file is part of SSH
+    This file is part of macSSH
     
     Copyright 2016 Daniel Machon
 
@@ -15,12 +15,6 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-/* 
- * File:   ssh-packet.h
- * Author: dmachon
- *
- * Created on March 22, 2016, 9:09 PM
  */
 
 #ifndef SSH_PACKET_H
@@ -94,10 +88,16 @@ struct packet {
 	
 };
 
-/* Initialize/Manipulate packet */
+/* Create new packet */
 struct packet* packet_new(unsigned int size);
+
+/* Wrap 'data' in a new packet */
+struct packet* packet_wrap(char *data, int size);
+
+/* Initialize packet */
 void packet_init(struct packet *pck);
-void packet_resize(struct packet *pck);
+
+/* Free packet */
 void packet_free(struct packet *pck);
 
 /* Crypto stuff */

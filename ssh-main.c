@@ -1,6 +1,6 @@
 /*
-    This file is part of SSH
-
+    This file is part of macSSH
+    
     Copyright 2016 Daniel Machon
 
     SSH program is free software: you can redistribute it and/or modify
@@ -16,12 +16,6 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-/*
- * File:   ssh-main.c
- * Author: dmachon
- *
- * Created on March 23, 2016, 8:26 PM
- */
 
 #include "includes.h"
 #include "build.h"
@@ -31,6 +25,7 @@
 #include "ssh-options.h"
 #include "kex.h"
 #include "dbg.h"
+#include "keys.h"
 
 void ssh_version()
 {
@@ -48,6 +43,7 @@ void ssh_help()
 		"     --debug			Print extra debug information during runtime\n"
 		"\n"
 		"  -p --port			Specify remote port\n"
+		"  -k --key			Create PK key (rsa or dss)\n"
 		);
 }
 
@@ -61,6 +57,7 @@ int ssh_parse_argv(int argc, char **argv)
 		ARG_DEBUG,
 		ARG_HELP,
 		ARG_PORT,
+		ARG_KEY,
 	};
 
 	static const struct option options[] = {
@@ -69,12 +66,13 @@ int ssh_parse_argv(int argc, char **argv)
 		{ "verbose", no_argument, NULL, ARG_VERBOSE},
 		{ "debug", no_argument, NULL, ARG_DEBUG},
 		{ "port", required_argument, NULL, ARG_PORT},
+		{ "key", required_argument, NULL, ARG_KEY},
 		{}
 	};
 
 
 	int c;
-	while ((c = getopt_long(argc, argv, "hv:p:", options, NULL)) >= 0) {
+	while ((c = getopt_long(argc, argv, "hv:p:k:", options, NULL)) >= 0) {
 		switch (c) {
 		case 'h':
 			ssh_help();
@@ -83,6 +81,9 @@ int ssh_parse_argv(int argc, char **argv)
 			return 0;
 		case 'p':
 			argv_options.server_port = 22;
+		case 'k':
+			ssh_generate_rsa_key();
+			return 0;
 		case ARG_HELP:
 			ssh_help();
 			return 0;
@@ -95,6 +96,9 @@ int ssh_parse_argv(int argc, char **argv)
 		case ARG_DEBUG:
 			argv_options.debug = 1;
 			break;
+		case ARG_KEY:
+			ssh_generate_rsa_key();
+			return 0;
 		default:
 			ssh_help();
 			return 0;

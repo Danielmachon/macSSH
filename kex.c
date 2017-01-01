@@ -1,5 +1,5 @@
 /*
-    This file is part of SSH
+    This file is part of macSSH
     
     Copyright 2016 Daniel Machon
 
@@ -617,10 +617,34 @@ static int hostkey_validate(unsigned char* key, unsigned int len,
 	hostkey_check(key);
 }
 
+static int hostkey_check(char *hostkey)
+{
+	char *line;
+	int line_len;
+
+	char *host = "194.255.39.141";
+	int host_len = strlen(host);
+
+	while (getline(&line, &line_len, hostkey) > 0) {
+
+		if(strncmp(line, host, host_len))
+			continue;
+		
+		/* Correct host but identification mismatch */
+		if(!strstr(line, "ssh-rsa"))
+			continue;
+		
+		
+		
+		
+
+	}
+}
+
 /*
  * Retrieve information about a base64 encoded hostkey
  */
-static int hostkey_check(char *hostkey)
+static int hostkey_check_2(char *hostkey)
 {
 	char *blob = malloc(1024);
 	char *line;
